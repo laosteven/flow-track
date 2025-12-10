@@ -100,58 +100,69 @@ void loop() {
     Serial.println("Streaming IMU data...");
     
     digitalWrite(LED_PIN, HIGH); // LED on when connected
+    
+    unsigned long lastSampleTime = 0;
+    const unsigned long SAMPLE_INTERVAL = 20; // 20ms = 50Hz
 
     while (central.connected()) {
-      float ax, ay, az;
-      float gx, gy, gz;
+      unsigned long currentTime = millis();
+      
+      // Sample at 50Hz
+      if (currentTime - lastSampleTime >= SAMPLE_INTERVAL) {
+        lastSampleTime = currentTime;
+        
+        float ax, ay, az;
+        float gx, gy, gz;
 
-      if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
-        IMU.readAcceleration(ax, ay, az);
-        IMU.readGyroscope(gx, gy, gz);
+        if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
+          IMU.readAcceleration(ax, ay, az);
+          IMU.readGyroscope(gx, gy, gz);
 
-        // Detect strokes based on acceleration magnitude
-        float magnitude = sqrt(ax*ax + ay*ay + az*az);
-        detectStroke(magnitude);
+          // Detect strokes based on acceleration magnitude
+          float magnitude = sqrt(ax*ax + ay*ay + az*az);
+          detectStroke(magnitude);
 
-        // Convert floats to bytes (little-endian)
-        byte accelData[12];
-        byte gyroData[12];
+          // Convert floats to bytes (little-endian)
+          byte accelData[12];
+          byte gyroData[12];
 
-        memcpy(accelData, &ax, 4);
-        memcpy(accelData + 4, &ay, 4);
-        memcpy(accelData + 8, &az, 4);
+          memcpy(accelData, &ax, 4);
+          memcpy(accelData + 4, &ay, 4);
+          memcpy(accelData + 8, &az, 4);
 
-        memcpy(gyroData, &gx, 4);
-        memcpy(gyroData + 4, &gy, 4);
-        memcpy(gyroData + 8, &gz, 4);
+          memcpy(gyroData, &gx, 4);
+          memcpy(gyroData + 4, &gy, 4);
+          memcpy(gyroData + 8, &gz, 4);
 
-        // Update BLE characteristics
-        accelChar.writeValue(accelData, 12);
-        gyroChar.writeValue(gyroData, 12);
+          // Update BLE characteristics
+          accelChar.writeValue(accelData, 12);
+          gyroChar.writeValue(gyroData, 12);
 
-        // Print to Serial for debugging (reduce frequency to avoid overwhelming)
-        static unsigned long lastPrint = 0;
-        if (millis() - lastPrint > 1000) { // Print once per second
-          Serial.print("Accel: [");
-          Serial.print(ax, 2); Serial.print(", ");
-          Serial.print(ay, 2); Serial.print(", ");
-          Serial.print(az, 2); Serial.print("] ");
-          
-          Serial.print("Gyro: [");
-          Serial.print(gx, 2); Serial.print(", ");
-          Serial.print(gy, 2); Serial.print(", ");
-          Serial.print(gz, 2); Serial.print("] ");
-          
-          Serial.print("Mag: ");
-          Serial.print(magnitude, 2);
-          Serial.print(" | Strokes: ");
-          Serial.println(totalStrokes);
-          
-          lastPrint = millis();
+          // Print to Serial for debugging (reduce frequency to avoid overwhelming)
+          static unsigned long lastPrint = 0;
+          if (currentTime - lastPrint > 1000) { // Print once per second
+            Serial.print("Accel: [");
+            Serial.print(ax, 2); Serial.print(", ");
+            Serial.print(ay, 2); Serial.print(", ");
+            Serial.print(az, 2); Serial.print("] ");
+            
+            Serial.print("Gyro: [");
+            Serial.print(gx, 2); Serial.print(", ");
+            Serial.print(gy, 2); Serial.print(", ");
+            Serial.print(gz, 2); Serial.print("] ");
+            
+            Serial.print("Mag: ");
+            Serial.print(magnitude, 2);
+            Serial.print(" | Strokes: ");
+            Serial.println(totalStrokes);
+            
+            lastPrint = currentTime;
+          }
         }
       }
-
-      delay(20); // ~50Hz sampling rate
+      
+      // Small delay to prevent busy-waiting
+      delay(1);
     }
 
     digitalWrite(LED_PIN, LOW); // LED off when disconnected
@@ -174,10 +185,8 @@ void detectStroke(float magnitude) {
       lastStrokeTime = currentTime;
       totalStrokes++;
       
-      // Quick LED flash on stroke detection
-      digitalWrite(LED_PIN, LOW);
-      delay(10);
-      digitalWrite(LED_PIN, HIGH);
+      // Note: LED stays solid when connected, no flash needed
+      // to avoid blocking with delay()
       
       Serial.print("STROKE detected! Total: ");
       Serial.println(totalStrokes);
