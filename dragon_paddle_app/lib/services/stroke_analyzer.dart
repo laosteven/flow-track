@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math' as math;
 import '../models/sensor_data.dart';
 
 /// Service to analyze paddle strokes and calculate statistics
@@ -91,7 +92,7 @@ class StrokeAnalyzer {
     if (mean == 0) return 100.0;
     
     final variance = powers.map((p) => (p - mean) * (p - mean)).reduce((a, b) => a + b) / powers.length;
-    final stdDev = variance;
+    final stdDev = math.sqrt(variance);
     
     // Convert to consistency percentage (lower variation = higher consistency)
     final cv = stdDev / mean;

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 /// Model for accelerometer data
 class AccelerometerData {
@@ -30,7 +31,7 @@ class AccelerometerData {
   }
 
   /// Calculate magnitude of acceleration
-  double get magnitude => (x * x + y * y + z * z);
+  double get magnitude => math.sqrt(x * x + y * y + z * z);
 
   @override
   String toString() => 'Accel(x: ${x.toStringAsFixed(2)}, y: ${y.toStringAsFixed(2)}, z: ${z.toStringAsFixed(2)})';
