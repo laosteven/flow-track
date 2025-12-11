@@ -546,12 +546,19 @@ void readTemperature() {
   tempHistory[tempHistIndex] = currentTemp;
   tempHistIndex = (tempHistIndex + 1) % 5;
   
-  // Calculate temperature variation
+  // Calculate temperature variation (simplified - assumes sequential order)
+  // Note: For true temporal analysis with circular buffer, would need to track order
   float tempVar = 0;
+  int count = 0;
   for (int i = 0; i < 4; i++) {
-    tempVar += abs(tempHistory[i] - tempHistory[i+1]);
+    if (tempHistory[i] != 0 && tempHistory[i+1] != 0) {
+      tempVar += abs(tempHistory[i] - tempHistory[i+1]);
+      count++;
+    }
   }
-  tempVar /= 4.0;
+  if (count > 0) {
+    tempVar /= count;
+  }
   
   // If variation is low and humidity indicates water, we're in water
   // This is a heuristic - actual calibration needed

@@ -29,7 +29,7 @@ class AdvancedMetricsCard extends StatelessWidget {
               context,
               icon: Icons.straighten,
               label: 'Stroke Length',
-              value: '${metrics.strokeLength.toStringAsFixed(1)} m',
+              value: '${metrics.strokeLength.toStringAsFixed(1)} units',
               color: Colors.blue,
             ),
             const SizedBox(height: 12),
