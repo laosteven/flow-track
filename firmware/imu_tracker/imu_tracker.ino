@@ -542,22 +542,30 @@ void readTemperature() {
   // Water temperature is more stable and humidity detection differs
   static float tempHistory[5] = {0};
   static int tempHistIndex = 0;
+  static int samplesCollected = 0;
   
   tempHistory[tempHistIndex] = currentTemp;
   tempHistIndex = (tempHistIndex + 1) % 5;
+  if (samplesCollected < 5) samplesCollected++;
   
-  // Calculate temperature variation (simplified - assumes sequential order)
-  // Note: For true temporal analysis with circular buffer, would need to track order
+  // Calculate temperature variation (average absolute difference between samples)
+  // Simple approach: compare all pairs to get overall stability measure
   float tempVar = 0;
   int count = 0;
-  for (int i = 0; i < 4; i++) {
-    if (tempHistory[i] != 0 && tempHistory[i+1] != 0) {
-      tempVar += abs(tempHistory[i] - tempHistory[i+1]);
-      count++;
+  
+  if (samplesCollected >= 5) {
+    // Have full buffer - calculate all pairwise differences
+    for (int i = 0; i < 5; i++) {
+      for (int j = i + 1; j < 5; j++) {
+        if (tempHistory[i] != 0 && tempHistory[j] != 0) {
+          tempVar += abs(tempHistory[i] - tempHistory[j]);
+          count++;
+        }
+      }
     }
-  }
-  if (count > 0) {
-    tempVar /= count;
+    if (count > 0) {
+      tempVar /= count;
+    }
   }
   
   // If variation is low and humidity indicates water, we're in water
