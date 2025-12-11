@@ -39,35 +39,79 @@ class _SessionListScreenState extends State<SessionListScreen> {
               itemBuilder: (context, index) {
                 final f = _files[index];
                 final name = f.path.split(Platform.pathSeparator).last;
-                return ListTile(
-                  title: Text(name),
-                  subtitle: Text('${f.statSync().modified}'),
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => SessionReviewScreen(file: File(f.path), sessionService: widget.sessionService)));
-                  },
-                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                    IconButton(
-                      icon: const Icon(Icons.share),
-                      onPressed: () async {
-                        final csv = await widget.sessionService.exportSessionCsv(File(f.path));
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Exported: $csv')));
-                      },
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SessionReviewScreen(
+                            file: File(f.path),
+                            sessionService: widget.sessionService,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.share),
+                            onPressed: () async {
+                              final csv = await widget.sessionService
+                                  .exportSessionCsv(File(f.path));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Exported: $csv')),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text('Delete session?'),
+                                  content: Text('Delete $name?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await widget.sessionService.deleteSession(
+                                  File(f.path),
+                                );
+                                _loadFiles();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
-                          title: const Text('Delete session?'),
-                          content: Text('Delete $name?'),
-                          actions: [TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete'))],
-                        ));
-                        if (confirm == true) {
-                          await widget.sessionService.deleteSession(File(f.path));
-                          _loadFiles();
-                        }
-                      },
-                    ),
-                  ]),
+                  ),
                 );
               },
             ),

@@ -12,6 +12,8 @@ class SessionService {
   StreamSubscription? _strokeSub;
   IOSink? _tempSink;
   File? _tempFile;
+  Timer? _metricsTimer;
+  final List<Map<String, dynamic>> _metrics = [];
 
   bool get isRecording => _recording;
 
@@ -30,9 +32,23 @@ class SessionService {
   Future<void> startWithAnalyzer(dynamic analyzer) async {
     await start();
     try {
+      // reset analyzer so stats start fresh for this recording
+      try {
+        analyzer.reset();
+      } catch (_) {}
       _strokeSub = analyzer.onStroke.listen((event) {
         // event expected: { 'timestamp': ISOString, 'power': double }
         _strokeEvents.add(event);
+      });
+      // start metrics sampling every 1s
+      _metricsTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        try {
+          final now = DateTime.now().toIso8601String();
+          final spm = analyzer.getStrokeRate();
+          final consistency = analyzer.getConsistency();
+          final avgPower = analyzer.getAveragePower();
+          _metrics.add({'t': now, 'spm': spm, 'consistency': consistency, 'avgPower': avgPower});
+        } catch (_) {}
       });
     } catch (_) {
       _strokeSub = null;
@@ -46,6 +62,8 @@ class SessionService {
     // close temp sink
     _tempSink?.close();
     _tempSink = null;
+    _metricsTimer?.cancel();
+    _metricsTimer = null;
   }
 
   void addSample(AccelerometerData sample) {
@@ -94,6 +112,7 @@ class SessionService {
       'startedAt': timestamp.toIso8601String(),
       'samples': jsonSamples,
       'strokes': _strokeEvents,
+      'metrics': _metrics,
     };
 
     final dir = await getApplicationDocumentsDirectory();
