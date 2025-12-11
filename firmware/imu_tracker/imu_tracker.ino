@@ -41,6 +41,10 @@ const float STROKE_END_THRESHOLD = 8.0;
 const unsigned long MIN_STROKE_INTERVAL = 300;
 const unsigned long SESSION_TIMEOUT = 300000; // 5 minutes of inactivity ends session
 
+// Water detection thresholds
+const float WATER_TEMP_VARIATION_THRESHOLD = 0.5; // °C
+const float WATER_HUMIDITY_THRESHOLD = 80.0; // %
+
 // Stroke phase enumeration
 enum StrokePhase {
   PHASE_IDLE,
@@ -360,7 +364,10 @@ void processStroke(float magnitude, float angularVelocity, float ax, float ay, f
       currentStroke.maxAccel = magnitude;
     }
     
-    // Accumulate stroke length (integrate velocity from acceleration)
+    // Accumulate stroke length (simplified approximation)
+    // Note: This is acceleration*time, which approximates relative stroke distance
+    // For true distance, would need double integration: accel->velocity->position
+    // Current approach is sufficient for comparative analysis between strokes
     currentStroke.strokeLength += magnitude * 0.02; // dt = 20ms
     
     // Accumulate rotation torque
@@ -529,7 +536,7 @@ void readTemperature() {
   
   // If variation is low and humidity indicates water, we're in water
   // This is a heuristic - actual calibration needed
-  if (tempVar < 0.5 && currentHumidity > 80) {
+  if (tempVar < WATER_TEMP_VARIATION_THRESHOLD && currentHumidity > WATER_HUMIDITY_THRESHOLD) {
     if (!inWater) {
       waterTemp = currentTemp;
       inWater = true;
@@ -636,7 +643,7 @@ void sendBLEData(float ax, float ay, float az, float gx, float gy, float gz, flo
   memcpy(tempData + 4, &currentHumidity, 4);
   tempChar.writeValue(tempData, 8);
   
-  // Send ML classifications (6 floats = 24 bytes, but we allocated 16, so pack 4)
+  // Send ML classifications (4 floats = 16 bytes)
   byte mlData[16];
   memcpy(mlData, &currentML.cleanStrokeScore, 4);
   memcpy(mlData + 4, &currentML.rotationQuality, 4);

@@ -147,8 +147,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   void _updateTrajectory(AccelerometerData accel, MagnetometerData mag) {
-    // Simple trajectory point from current sensor data
-    // In a real implementation, this would integrate velocity from acceleration
+    // Simplified trajectory visualization using raw sensor data
+    // Note: This uses acceleration values directly as position coordinates
+    // for relative motion visualization. For true position tracking, would need:
+    // 1. Double integration (accel -> velocity -> position)
+    // 2. Drift correction using magnetometer/position reset
+    // Current approach provides useful relative motion patterns for technique analysis
     final point = TrajectoryPoint(
       x: accel.x,
       y: accel.y,
