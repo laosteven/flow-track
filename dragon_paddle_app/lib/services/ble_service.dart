@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import '../models/sensor_data.dart';
 
@@ -41,21 +43,20 @@ class BleService {
   }
   
   /// Start scanning for devices
-  void startScan() {
-    _scanSubscription?.cancel();
-    _scanSubscription = _ble.scanForDevices(
-      withServices: [],
-      scanMode: ScanMode.lowLatency,
-    ).listen(
-      (device) {
-        if (device.name.contains('DragonPaddle') || device.name.contains('DragonPaddleIMU')) {
-          _scanResultsController.add(device);
-        }
-      },
-      onError: (error) {
-        print('Scan error: $error');
-      },
-    );
+  Future<void> startScan() async {
+    if (kIsWeb) {
+      // flutter_reactive_ble is not supported on web; avoid calling platform APIs.
+      print('startScan skipped: BLE not supported on web');
+      return;
+    }
+
+    final granted = await _ensurePermissions();
+    if (!granted) {
+      print('startScan aborted: required permissions not granted');
+      return;
+    }
+
+    _startBleScanInternal();
   }
   
   /// Stop scanning
@@ -73,7 +74,7 @@ class BleService {
       connectionTimeout: const Duration(seconds: 10),
     ).listen(
       (state) {
-        _connectionStateController.add(state);
+        _connectionStateController.add(state.connectionState);
         if (state.connectionState == DeviceConnectionState.connected) {
           _connectedDeviceId = deviceId;
           _subscribeToCharacteristics(deviceId);
@@ -142,14 +143,47 @@ class BleService {
     _unsubscribeFromCharacteristics();
     _connectedDeviceId = null;
   }
-  
-  /// Dispose resources
-  void dispose() {
-    stopScan();
-    disconnect();
-    _scanResultsController.close();
-    _accelerometerController.close();
-    _gyroscopeController.close();
-    _connectionStateController.close();
+
+  Future<bool> _ensurePermissions() async {
+    // On Android 12+ additional BLUETOOTH_SCAN/CONNECT permissions may be required.
+    // We request location (coarse) as a fallback for older Android versions.
+    try {
+      final statuses = await [
+        Permission.locationWhenInUse,
+        Permission.bluetooth,
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+      ].request();
+
+      // Consider permissions granted if any required permission is granted.
+      bool granted = statuses.values.any((s) => s.isGranted);
+      return granted;
+    } catch (e) {
+      print('Permission request failed: $e');
+      return false;
+    }
+  }
+
+  void _startBleScanInternal() {
+    _scanSubscription?.cancel();
+    try {
+      _scanSubscription = _ble.scanForDevices(
+        withServices: [],
+        scanMode: ScanMode.lowLatency,
+      ).listen(
+        (device) {
+          final name = device.name;
+          if (name.contains('DragonPaddle') || name.contains('DragonPaddleIMU')) {
+            _scanResultsController.add(device);
+          }
+        },
+        onError: (error) {
+          print('Scan error: $error');
+        },
+      );
+    } catch (e) {
+      // Guard against platform / unsupported operation errors (e.g., Platform._operatingSystem)
+      print('Failed to start BLE scan: $e');
+    }
   }
 }

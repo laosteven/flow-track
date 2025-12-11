@@ -131,8 +131,7 @@ The system detects paddle strokes using:
 ```
 flow-track/
 ├── firmware/
-│   └── nano33ble_rev2/
-│       └── imu_tracker.ino          # Arduino firmware
+│   └── imu_tracker.ino          # Arduino firmware
 ├── dragon_paddle_app/
 │   ├── lib/
 │   │   ├── main.dart                # App entry point

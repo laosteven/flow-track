@@ -21,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
   
   bool _isScanning = false;
   bool _isConnected = false;
-  String _connectionStatus = 'Disconnected';
   
   List<DiscoveredDevice> _discoveredDevices = [];
   
@@ -53,8 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Listen to connection state
     _bleService.connectionState.listen((state) {
       setState(() {
-        _isConnected = state.connectionState == DeviceConnectionState.connected;
-        _connectionStatus = state.connectionState.toString().split('.').last;
+        _isConnected = state == DeviceConnectionState.connected;
       });
     });
     
@@ -94,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _bleService.disconnect();
     setState(() {
       _isConnected = false;
-      _connectionStatus = 'Disconnected';
     });
   }
   
@@ -111,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   @override
   void dispose() {
-    _bleService.dispose();
+    _bleService.disconnect();
     super.dispose();
   }
   
@@ -151,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            _connectionStatus,
+            _isConnected ? 'Connected' : 'Disconnected',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 20),
