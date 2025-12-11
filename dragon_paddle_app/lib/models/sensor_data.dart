@@ -209,8 +209,14 @@ class TemperatureData {
     );
   }
 
-  bool get isHighTemp => temperature > 35.0;
-  bool get isInWater => humidity > 80.0;
+  // Temperature safety threshold (can be adjusted based on climate/preference)
+  static const double highTempThreshold = 35.0; // °C
+  
+  // Water detection threshold (can be adjusted for different conditions)
+  static const double waterHumidityThreshold = 80.0; // %
+
+  bool get isHighTemp => temperature > highTempThreshold;
+  bool get isInWater => humidity > waterHumidityThreshold;
 
   @override
   String toString() => 'Temp(${temperature.toStringAsFixed(1)}°C, ${humidity.toStringAsFixed(1)}%)';

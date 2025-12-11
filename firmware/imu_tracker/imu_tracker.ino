@@ -45,6 +45,13 @@ const unsigned long SESSION_TIMEOUT = 300000; // 5 minutes of inactivity ends se
 const float WATER_TEMP_VARIATION_THRESHOLD = 0.5; // °C
 const float WATER_HUMIDITY_THRESHOLD = 80.0; // %
 
+// Temperature safety threshold
+const float HIGH_TEMP_WARNING_THRESHOLD = 35.0; // °C
+
+// Fatigue detection parameters
+const int FATIGUE_SAMPLE_SIZE = 5; // Number of strokes to compare
+const int FATIGUE_HISTORY_SIZE = 10; // Total stroke history for fatigue calc
+
 // Stroke phase enumeration
 enum StrokePhase {
   PHASE_IDLE,
@@ -364,10 +371,12 @@ void processStroke(float magnitude, float angularVelocity, float ax, float ay, f
       currentStroke.maxAccel = magnitude;
     }
     
-    // Accumulate stroke length (simplified approximation)
-    // Note: This is acceleration*time, which approximates relative stroke distance
-    // For true distance, would need double integration: accel->velocity->position
-    // Current approach is sufficient for comparative analysis between strokes
+    // Accumulate stroke length (RELATIVE METRIC - NOT ABSOLUTE DISTANCE)
+    // This calculates acceleration*time which provides a comparative metric
+    // between strokes but is NOT true distance in meters. For actual distance:
+    // - Would need double integration: accel -> velocity -> position
+    // - Would need drift correction and initial position calibration
+    // - Current metric is useful for comparing stroke consistency and relative effort
     currentStroke.strokeLength += magnitude * 0.02; // dt = 20ms
     
     // Accumulate rotation torque
@@ -433,8 +442,10 @@ void processStroke(float magnitude, float angularVelocity, float ax, float ay, f
 }
 
 float calculatePaddleAngle(float ax, float ay, float az) {
-  // Calculate angle relative to vertical (assuming Z is vertical when mounted)
-  // This is simplified - actual mounting orientation may vary
+  // Calculate angle relative to vertical
+  // ASSUMES: Z-axis is vertical when paddle is mounted correctly
+  // For different mounting orientations, these axes may need adjustment
+  // Calibration: Ensure sensor is mounted with Z pointing up along paddle shaft
   float angle = atan2(sqrt(ax*ax + ay*ay), az) * 180.0 / PI;
   return angle;
 }
@@ -470,20 +481,28 @@ float calculateStrokeSmoothness() {
 
 void calculateFatigue() {
   // Detect fatigue by looking at declining stroke power over time
+  // Compares early strokes to recent strokes
+  
+  // Ensure we have enough data
+  if (totalStrokes < FATIGUE_HISTORY_SIZE) {
+    fatigueScore = 0; // Not enough data yet
+    return;
+  }
+  
   float earlyAvg = 0;
   float recentAvg = 0;
   
-  // Average of first 5 strokes
-  for (int i = 0; i < 5; i++) {
+  // Average of first FATIGUE_SAMPLE_SIZE strokes
+  for (int i = 0; i < FATIGUE_SAMPLE_SIZE; i++) {
     earlyAvg += recentStrokePowers[i];
   }
-  earlyAvg /= 5.0;
+  earlyAvg /= FATIGUE_SAMPLE_SIZE;
   
-  // Average of last 5 strokes
-  for (int i = 5; i < 10; i++) {
+  // Average of last FATIGUE_SAMPLE_SIZE strokes
+  for (int i = FATIGUE_SAMPLE_SIZE; i < FATIGUE_HISTORY_SIZE; i++) {
     recentAvg += recentStrokePowers[i];
   }
-  recentAvg /= 5.0;
+  recentAvg /= FATIGUE_SAMPLE_SIZE;
   
   // Fatigue score: 0 = no fatigue, 1 = significant fatigue
   if (earlyAvg > 0) {
@@ -553,7 +572,7 @@ void readTemperature() {
   }
   
   // Safety warning for high temperature
-  if (currentTemp > 35.0) {
+  if (currentTemp > HIGH_TEMP_WARNING_THRESHOLD) {
     Serial.println("⚠ WARNING: HIGH TEMPERATURE - Stay hydrated!");
   }
 }
