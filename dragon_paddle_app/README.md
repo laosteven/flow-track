@@ -1,4 +1,4 @@
-# Dragon Paddle Tracker - Flutter App
+# Flow Track - Flutter App
 
 Mobile application for real-time paddle stroke analysis and performance tracking.
 
@@ -125,7 +125,7 @@ lib/
 ## Usage
 
 1. **Launch App**
-   - Open Dragon Paddle Tracker
+   - Open Flow Track
    - Ensure Bluetooth is enabled on your phone
 
 2. **Connect to Device**

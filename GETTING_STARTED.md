@@ -1,6 +1,6 @@
-# Getting Started with Dragon Paddle Tracker
+# Getting Started with Flow Track
 
-This guide will walk you through setting up your Dragon Paddle Tracker from scratch.
+This guide will walk you through setting up your Flow Track from scratch.
 
 ## What You'll Need
 
@@ -47,7 +47,7 @@ This guide will walk you through setting up your Dragon Paddle Tracker from scra
 6. Open **Tools → Serial Monitor** (set to 115200 baud)
 7. You should see:
    ```
-   Dragon Paddle Tracker - Initializing...
+   Flow Track - Initializing...
    ✓ IMU initialized successfully
    ✓ BLE initialized successfully
    Ready! Waiting for connections...
@@ -143,12 +143,12 @@ Pre-built APK/IPA files will be available in GitHub Releases.
    - LED should blink 3 times → Ready state
 
 2. **Open App:**
-   - Launch Dragon Paddle Tracker
+   - Launch Flow Track
    - Tap Bluetooth icon (top-right)
 
 3. **Scan for Device:**
    - Tap "Scan for Devices"
-   - "DragonPaddleIMU" should appear within 5 seconds
+   - "FlowTrackIMU" should appear within 5 seconds
    - If not, see troubleshooting below
 
 4. **Connect:**

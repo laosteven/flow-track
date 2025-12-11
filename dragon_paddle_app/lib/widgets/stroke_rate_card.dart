@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 class StrokeRateCard extends StatelessWidget {
   final double strokeRate;
+  final bool compact;
+  final VoidCallback? onInfo;
   
   const StrokeRateCard({
     super.key,
     required this.strokeRate,
+    this.compact = false,
+    this.onInfo,
   });
   
   @override
@@ -13,15 +17,26 @@ class StrokeRateCard extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(compact ? 12 : 24),
         child: Column(
           children: [
-            Text(
-              'STROKE RATE',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'STROKE RATE',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+                if (onInfo != null)
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, size: 18),
+                    onPressed: onInfo,
+                  ),
+              ],
             ),
             const SizedBox(height: 10),
             Row(

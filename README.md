@@ -1,10 +1,10 @@
-# 🐉 Dragon Paddle Tracker
+# 🐉 Flow Track
 
 A complete paddle tracking system for dragon boat athletes, featuring real-time motion analysis and performance metrics.
 
 ## 🎯 Overview
 
-The Dragon Paddle Tracker helps dragon boat paddlers improve their technique through real-time feedback on stroke rate, consistency, and motion patterns. The system consists of:
+The Flow Track helps dragon boat paddlers improve their technique through real-time feedback on stroke rate, consistency, and motion patterns. The system consists of:
 
 1. **Arduino Firmware** - Runs on Arduino Nano 33 BLE Sense Rev2 attached to paddle
 2. **Flutter Mobile App** - Displays live data and performance metrics on paddlers' phones
@@ -71,7 +71,7 @@ The Dragon Paddle Tracker helps dragon boat paddlers improve their technique thr
 #### 2. Build Flutter App
 
 ```bash
-cd dragon_paddle_app
+   cd dragon_paddle_app
 
 # Get dependencies
 flutter pub get
@@ -88,7 +88,7 @@ flutter build ios      # For iOS
 
 1. **Connect to Paddle**
    - Tap the Bluetooth icon in the top-right
-   - App will scan for "DragonPaddleIMU" devices
+   - App will scan for "FlowTrackIMU" devices
    - Tap "Connect" on your device
 
 2. **Start Paddling**

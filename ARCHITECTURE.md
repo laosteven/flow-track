@@ -1,12 +1,12 @@
 # System Architecture
 
-This document describes the architecture of the Dragon Paddle Tracker system.
+This document describes the architecture of the Flow Track system.
 
 ## System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Dragon Paddle Tracker System                  │
+│                    Flow Track System                              │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐

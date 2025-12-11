@@ -4,10 +4,16 @@ import '../models/sensor_data.dart';
 
 class MotionGraph extends StatelessWidget {
   final List<AccelerometerData> data;
+  final bool compact;
+  final VoidCallback? onInfo;
+  final double height;
   
   const MotionGraph({
     super.key,
     required this.data,
+    this.compact = false,
+    this.onInfo,
+    this.height = 200,
   });
   
   @override
@@ -15,19 +21,26 @@ class MotionGraph extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(compact ? 8 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Motion Pattern',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Motion Pattern',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (onInfo != null) IconButton(icon: const Icon(Icons.info_outline, size: 18), onPressed: onInfo),
+              ],
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 200,
+              height: height,
               child: data.isEmpty
                   ? const Center(
                       child: Text('Waiting for data...'),

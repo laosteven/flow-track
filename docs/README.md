@@ -1,4 +1,4 @@
-# Dragon Paddle Tracker Documentation
+# Flow Track Documentation
 
 ## Table of Contents
 

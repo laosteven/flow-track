@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 class ConsistencyIndicator extends StatelessWidget {
   final double consistency;
+  final bool compact;
+  final VoidCallback? onInfo;
   
   const ConsistencyIndicator({
     super.key,
     required this.consistency,
+    this.compact = false,
+    this.onInfo,
   });
   
   @override
@@ -13,24 +17,26 @@ class ConsistencyIndicator extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(compact ? 12 : 20),
         child: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   _getIconForConsistency(consistency),
-                  size: 40,
+                  size: compact ? 28 : 40,
                   color: _getColorForConsistency(consistency),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Consistency',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Consistency',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
+                if (onInfo != null) IconButton(icon: const Icon(Icons.info_outline, size: 18), onPressed: onInfo),
               ],
             ),
             const SizedBox(height: 16),

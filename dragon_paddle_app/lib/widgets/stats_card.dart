@@ -5,6 +5,8 @@ class StatsCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final bool compact;
+  final VoidCallback? onInfo;
   
   const StatsCard({
     super.key,
@@ -12,6 +14,8 @@ class StatsCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.compact = false,
+    this.onInfo,
   });
   
   @override
@@ -19,19 +23,27 @@ class StatsCard extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(compact ? 8 : 16),
         child: Column(
           children: [
-            Icon(icon, size: 36, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade600,
-              ),
-              textAlign: TextAlign.center,
+            Row(
+              children: [
+                Icon(icon, size: compact ? 24 : 36, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+                if (onInfo != null)
+                  IconButton(icon: const Icon(Icons.info_outline, size: 18), onPressed: onInfo),
+              ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               value,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(

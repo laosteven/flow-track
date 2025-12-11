@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import '../models/sensor_data.dart';
@@ -108,6 +108,9 @@ class BleService {
       (data) {
         if (data.length >= 12) {
           final accelData = AccelerometerData.fromBytes(Uint8List.fromList(data));
+          if (kDebugMode) {
+            print('BLE accel: ${accelData.magnitude.toStringAsFixed(2)}');
+          }
           _accelerometerController.add(accelData);
         }
       },
@@ -172,8 +175,10 @@ class BleService {
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
-          final name = device.name;
-          if (name.contains('DragonPaddle') || name.contains('DragonPaddleIMU')) {
+          final name = device.name ?? '';
+          final lname = name.toLowerCase();
+          // Match FlowTrack, DragonPaddle (legacy), or any device advertising IMU
+          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('dragonpaddle') || lname.contains('dragonpaddleimu') || lname.contains('imu')) {
             _scanResultsController.add(device);
           }
         },

@@ -1,8 +1,8 @@
-# Implementation Summary: Dragon Boat Paddle Tracker
+# Implementation Summary: Flow Track
 
 ## Overview
 
-This document summarizes the complete implementation of the Dragon Boat Paddle Tracker system as per the requirements in the problem statement.
+This document summarizes the complete implementation of the Flow Track system as per the requirements in the problem statement.
 
 ## ✅ Requirements Met
 
@@ -424,7 +424,7 @@ The project is designed to be:
 
 ## 📜 Conclusion
 
-The Dragon Boat Paddle Tracker has been successfully implemented according to all core requirements in the problem statement. The system includes:
+The Flow Track system has been successfully implemented according to all core requirements in the problem statement. The system includes:
 
 - ✅ Complete Arduino firmware with IMU and BLE
 - ✅ Full-featured Flutter mobile app

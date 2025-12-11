@@ -40,7 +40,7 @@ void setup() {
   // Wait for serial connection (optional, comment out for standalone operation)
   // while (!Serial);
 
-  Serial.println("Dragon Paddle Tracker - Initializing...");
+  Serial.println("Flow Track - Initializing...");
   Serial.println("========================================");
   
   // Initialize IMU
@@ -67,7 +67,7 @@ void setup() {
   Serial.println("✓ BLE initialized successfully");
 
   // Configure BLE
-  BLE.setLocalName("DragonPaddleIMU");
+  BLE.setLocalName("FlowTrackIMU");
   BLE.setAdvertisedService(imuService);
 
   imuService.addCharacteristic(accelChar);
@@ -78,7 +78,7 @@ void setup() {
   Serial.println("✓ BLE advertising started");
   Serial.println("========================================");
   Serial.println("Ready! Waiting for connections...");
-  Serial.println("Device Name: DragonPaddleIMU");
+  Serial.println("Device Name: FlowTrackIMU");
   Serial.println("========================================");
   
   // Blink LED to show ready state
