@@ -24,7 +24,7 @@
 
 #include <ArduinoBLE.h>
 #include <Arduino_BMI270_BMM150.h>
-#include <Arduino_HTS221.h>
+#include <Arduino_HS300x.h>
 
 // BLE Service and Characteristics
 BLEService imuService("180A");
@@ -164,8 +164,8 @@ void setup() {
 
   // Initialize Temperature Sensor
   Serial.println("Initializing Temperature Sensor...");
-  if (!HTS.begin()) {
-    Serial.println("⚠ Failed to initialize HTS221 (Temperature sensor)");
+  if (!HS300x.begin()) {
+    Serial.println("⚠ Failed to initialize HS300x (Temperature sensor)");
     Serial.println("  Continuing without temperature sensing...");
   } else {
     Serial.println("✓ Temperature sensor initialized");
@@ -535,8 +535,8 @@ void detectSession(float magnitude, unsigned long currentTime) {
 }
 
 void readTemperature() {
-  currentTemp = HTS.readTemperature();
-  currentHumidity = HTS.readHumidity();
+  currentTemp = HS300x.readTemperature();
+  currentHumidity = HS300x.readHumidity();
   
   // Detect water vs air based on temperature stability and humidity
   // Water temperature is more stable and humidity detection differs
