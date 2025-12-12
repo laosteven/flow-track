@@ -538,8 +538,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
               
               // Advanced metrics
-              AdvancedMetricsCard(metrics: _advancedMetrics),
-              const SizedBox(height: 12),
+              // AdvancedMetricsCard(metrics: _advancedMetrics),
+              // const SizedBox(height: 12),
               
               // Temperature monitoring
               TemperatureCard(temperature: _temperatureData),
