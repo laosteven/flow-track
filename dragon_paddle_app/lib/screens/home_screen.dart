@@ -10,6 +10,10 @@ import '../widgets/stroke_rate_card.dart';
 import '../widgets/consistency_indicator.dart';
 import '../widgets/motion_graph.dart';
 import '../widgets/stats_card.dart';
+import '../widgets/advanced_metrics_card.dart';
+import '../widgets/temperature_card.dart';
+import '../widgets/ml_quality_card.dart';
+import '../widgets/trajectory_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,6 +40,16 @@ class _HomeScreenState extends State<HomeScreen> {
   double _averagePower = 0.0;
 
   List<AccelerometerData> _recentData = [];
+  
+  // Advanced metrics
+  AdvancedMetrics _advancedMetrics = AdvancedMetrics.empty();
+  TemperatureData _temperatureData = TemperatureData.empty();
+  MLClassifications _mlClassifications = MLClassifications.empty();
+  MagnetometerData? _lastMagData;
+  
+  // Trajectory tracking
+  List<TrajectoryPoint> _trajectoryPoints = [];
+  final int _maxTrajectoryPoints = 100;
 
   @override
   void initState() {
@@ -96,6 +110,62 @@ class _HomeScreenState extends State<HomeScreen> {
         _averagePower = _strokeAnalyzer.getAveragePower();
         _recentData = _strokeAnalyzer.getRecentHistory(count: 100);
       });
+      
+      // Update trajectory with accelerometer position (integrate acceleration)
+      if (_lastMagData != null) {
+        _updateTrajectory(data, _lastMagData!);
+      }
+    });
+    
+    // Listen to magnetometer data
+    _bleService.magnetometerData.listen((data) {
+      setState(() {
+        _lastMagData = data;
+      });
+    });
+    
+    // Listen to advanced metrics
+    _bleService.advancedMetrics.listen((metrics) {
+      setState(() {
+        _advancedMetrics = metrics;
+      });
+    });
+    
+    // Listen to temperature data
+    _bleService.temperatureData.listen((tempData) {
+      setState(() {
+        _temperatureData = tempData;
+      });
+    });
+    
+    // Listen to ML classifications
+    _bleService.mlClassifications.listen((mlData) {
+      setState(() {
+        _mlClassifications = mlData;
+      });
+    });
+  }
+  
+  void _updateTrajectory(AccelerometerData accel, MagnetometerData mag) {
+    // Simplified trajectory visualization using raw sensor data
+    // Note: This uses acceleration values directly as position coordinates
+    // for relative motion visualization. For true position tracking, would need:
+    // 1. Double integration (accel -> velocity -> position)
+    // 2. Drift correction using magnetometer/position reset
+    // Current approach provides useful relative motion patterns for technique analysis
+    final point = TrajectoryPoint(
+      x: accel.x,
+      y: accel.y,
+      z: accel.z,
+      timestamp: DateTime.now(),
+    );
+    
+    setState(() {
+      _trajectoryPoints.add(point);
+      // Keep only recent points
+      if (_trajectoryPoints.length > _maxTrajectoryPoints) {
+        _trajectoryPoints.removeAt(0);
+      }
     });
   }
 
@@ -132,6 +202,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _totalStrokes = 0;
       _averagePower = 0.0;
       _recentData = [];
+      _trajectoryPoints = [];
+      _advancedMetrics = AdvancedMetrics.empty();
+      _mlClassifications = MLClassifications.empty();
     });
   }
 
@@ -462,6 +535,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Live 3-axis accelerometer data for the last samples.',
                 ),
               ),
+              const SizedBox(height: 12),
+              
+              // Advanced metrics
+              // AdvancedMetricsCard(metrics: _advancedMetrics),
+              // const SizedBox(height: 12),
+              
+              // Temperature monitoring
+              TemperatureCard(temperature: _temperatureData),
+              const SizedBox(height: 12),
+              
+              // ML Quality analysis
+              MLQualityCard(ml: _mlClassifications),
+              const SizedBox(height: 12),
+              
+              // 3D Trajectory visualization
+              TrajectoryWidget(trajectoryPoints: _trajectoryPoints),
             ],
           ),
         );
