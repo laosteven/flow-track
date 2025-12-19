@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Advanced metrics
   AdvancedMetrics _advancedMetrics = AdvancedMetrics.empty();
   TemperatureData _temperatureData = TemperatureData.empty();
-  MLClassifications _mlClassifications = MLClassifications.empty();
   MagnetometerData? _lastMagData;
   
   // Trajectory tracking
@@ -137,13 +136,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _temperatureData = tempData;
       });
     });
-    
-    // Listen to ML classifications
-    _bleService.mlClassifications.listen((mlData) {
-      setState(() {
-        _mlClassifications = mlData;
-      });
-    });
   }
   
   void _updateTrajectory(AccelerometerData accel, MagnetometerData mag) {
@@ -204,7 +196,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _recentData = [];
       _trajectoryPoints = [];
       _advancedMetrics = AdvancedMetrics.empty();
-      _mlClassifications = MLClassifications.empty();
     });
   }
 
@@ -217,6 +208,8 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Session saved: $path')));
     } else {
+      // Reset stats to match device
+      _strokeAnalyzer.reset();
       await _sessionService.startWithAnalyzer(_strokeAnalyzer);
       ScaffoldMessenger.of(
         context,
@@ -266,18 +259,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? 'Disable keep screen awake'
                 : 'Keep screen awake',
           ),
-          IconButton(
-            icon: Icon(
-              _sessionService.isRecording
-                  ? Icons.mode_standby
-                  : Icons.rowing,
-              color: _sessionService.isRecording ? Colors.red : null,
+          if (_isConnected)
+            IconButton(
+              icon: Icon(
+                _sessionService.isRecording
+                    ? Icons.mode_standby
+                    : Icons.rowing,
+                color: _sessionService.isRecording ? Colors.red : null,
+              ),
+              onPressed: _toggleRecording,
+              tooltip: _sessionService.isRecording
+                  ? 'Stop Recording'
+                  : 'Start Recording',
             ),
-            onPressed: _toggleRecording,
-            tooltip: _sessionService.isRecording
-                ? 'Stop Recording'
-                : 'Start Recording',
-          ),
         ],
       ),
       drawer: Drawer(
@@ -476,20 +470,12 @@ class _HomeScreenState extends State<HomeScreen> {
               StrokeRateCard(
                 strokeRate: _strokeRate,
                 compact: compact,
-                onInfo: () => _showInfo(
-                  'Stroke Rate',
-                  'Strokes per minute based on detected stroke timestamps.',
-                ),
               ),
               const SizedBox(height: 12),
 
               ConsistencyIndicator(
                 consistency: _consistency,
                 compact: compact,
-                onInfo: () => _showInfo(
-                  'Consistency',
-                  'Coefficient of variation of recent stroke powers (0-100%).',
-                ),
               ),
               const SizedBox(height: 12),
 
@@ -502,10 +488,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Icons.rowing,
                       color: Colors.blue,
                       compact: compact,
-                      onInfo: () => _showInfo(
-                        'Total Strokes',
-                        'Running count of detected strokes for this session.',
-                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -516,10 +498,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Icons.speed,
                       color: Colors.orange,
                       compact: compact,
-                      onInfo: () => _showInfo(
-                        'Average Power',
-                        'Average acceleration magnitude of recent strokes.',
-                      ),
                     ),
                   ),
                 ],
@@ -530,10 +508,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 data: _recentData,
                 compact: compact,
                 height: graphHeight,
-                onInfo: () => _showInfo(
-                  'Motion Pattern',
-                  'Live 3-axis accelerometer data for the last samples.',
-                ),
               ),
               const SizedBox(height: 12),
               
@@ -545,10 +519,6 @@ class _HomeScreenState extends State<HomeScreen> {
               TemperatureCard(temperature: _temperatureData),
               const SizedBox(height: 12),
               
-              // ML Quality analysis
-              MLQualityCard(ml: _mlClassifications),
-              const SizedBox(height: 12),
-              
               // 3D Trajectory visualization
               TrajectoryWidget(trajectoryPoints: _trajectoryPoints),
             ],
@@ -558,19 +528,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showInfo(String title, String body) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(body),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
 }

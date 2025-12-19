@@ -15,7 +15,6 @@ class BleService {
   static const String magCharUuid = "2A39";
   static const String metricsCharUuid = "2A3A";
   static const String tempCharUuid = "2A3B";
-  static const String mlCharUuid = "2A3C";
   
   final _scanResultsController = StreamController<DiscoveredDevice>.broadcast();
   final _accelerometerController = StreamController<AccelerometerData>.broadcast();
@@ -23,7 +22,6 @@ class BleService {
   final _magnetometerController = StreamController<MagnetometerData>.broadcast();
   final _metricsController = StreamController<AdvancedMetrics>.broadcast();
   final _temperatureController = StreamController<TemperatureData>.broadcast();
-  final _mlController = StreamController<MLClassifications>.broadcast();
   final _connectionStateController = StreamController<DeviceConnectionState>.broadcast();
   
   StreamSubscription? _scanSubscription;
@@ -32,7 +30,6 @@ class BleService {
   StreamSubscription? _magSubscription;
   StreamSubscription? _metricsSubscription;
   StreamSubscription? _tempSubscription;
-  StreamSubscription? _mlSubscription;
   StreamSubscription? _connectionSubscription;
   
   String? _connectedDeviceId;
@@ -43,7 +40,6 @@ class BleService {
   Stream<MagnetometerData> get magnetometerData => _magnetometerController.stream;
   Stream<AdvancedMetrics> get advancedMetrics => _metricsController.stream;
   Stream<TemperatureData> get temperatureData => _temperatureController.stream;
-  Stream<MLClassifications> get mlClassifications => _mlController.stream;
   Stream<DeviceConnectionState> get connectionState => _connectionStateController.stream;
   
   bool get isConnected => _connectedDeviceId != null;
@@ -138,12 +134,6 @@ class BleService {
       deviceId: deviceId,
     );
     
-    final mlCharacteristic = QualifiedCharacteristic(
-      serviceId: Uuid.parse(serviceUuid),
-      characteristicId: Uuid.parse(mlCharUuid),
-      deviceId: deviceId,
-    );
-    
     _accelSubscription = _ble.subscribeToCharacteristic(accelCharacteristic).listen(
       (data) {
         if (data.length >= 12) {
@@ -209,21 +199,6 @@ class BleService {
         print('Temperature subscription error: $error');
       },
     );
-    
-    _mlSubscription = _ble.subscribeToCharacteristic(mlCharacteristic).listen(
-      (data) {
-        if (data.length >= 16) {
-          final mlData = MLClassifications.fromBytes(Uint8List.fromList(data));
-          if (kDebugMode) {
-            print('BLE ML: ${mlData.toString()}');
-          }
-          _mlController.add(mlData);
-        }
-      },
-      onError: (error) {
-        print('ML subscription error: $error');
-      },
-    );
   }
   
   /// Unsubscribe from characteristics
@@ -233,13 +208,11 @@ class BleService {
     _magSubscription?.cancel();
     _metricsSubscription?.cancel();
     _tempSubscription?.cancel();
-    _mlSubscription?.cancel();
     _accelSubscription = null;
     _gyroSubscription = null;
     _magSubscription = null;
     _metricsSubscription = null;
     _tempSubscription = null;
-    _mlSubscription = null;
   }
   
   /// Disconnect from device
@@ -277,7 +250,7 @@ class BleService {
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
-          final name = device.name ?? '';
+          final name = device.name;
           final lname = name.toLowerCase();
           // Match FlowTrack, DragonPaddle (legacy), or any device advertising IMU
           if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('flowtrackpro') || lname.contains('dragonpaddle') || lname.contains('dragonpaddleimu') || lname.contains('imu')) {
@@ -304,7 +277,6 @@ class BleService {
     _magnetometerController.close();
     _metricsController.close();
     _temperatureController.close();
-    _mlController.close();
     _connectionStateController.close();
   }
 }
