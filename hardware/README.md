@@ -107,26 +107,64 @@ Visual indicator:
         [Paddle Blade]
 ```
 
-## 3D Printable Mounts (Coming Soon)
+## 3D Printable Mounts
 
-We're designing custom mounts for secure Arduino attachment:
+Custom 3D printed mounts are now available for secure Arduino attachment. All designs are created in **Fusion 360** and optimized for printing.
 
-1. **Clamshell Mount**
-   - Two-piece design that snaps around paddle shaft
-   - Includes cable management channels
-   - Waterproof seal option
+### Design Specifications
+- **CAD Software:** Fusion 360
+- **Units:** Millimeters (mm)
+- **Printer Used:** Bambulab P1S
+- **Material:** PLA
+- **Layer Height:** 0.2mm recommended
+- **Infill:** 20% minimum for structural parts
 
-2. **Slide-On Mount**
-   - Single piece that slides onto shaft from top
-   - Lock mechanism to prevent movement
-   - Integrated battery holder
+### Available Designs
 
-3. **Universal Bracket**
-   - Adjustable for different shaft diameters
-   - Quick-release mechanism
-   - Multiple Arduino orientation options
+#### 1. **Enclosure**
+Located in `enclosure/` folder:
+- **Source files:** Fusion 360 design files in `source/`
+- **STL files:** Print-ready files in `stl/`
+- Protective case for the Arduino Nano 33 BLE
+- Designed to mount securely on paddle shaft
+- Includes mounting points and cable routing
 
-STL files will be added to this directory once finalized.
+#### 2. **Holder**
+Located in `holder/` folder:
+- **Source files:** Fusion 360 design files in `source/`
+- **STL files:** Print-ready files in `stl/`
+- Mounting bracket for paddle attachment
+- Adjustable design for different shaft diameters
+- Quick-release mechanism for easy installation
+
+### Printing Instructions
+
+1. **Prepare Files**
+   - Download STL files from respective folders
+   - Import into your slicer software
+
+2. **Recommended Settings**
+   - Material: PLA
+   - Nozzle Temperature: 210°C
+   - Bed Temperature: 60°C
+   - Print Speed: 50-60mm/s
+   - Supports: May be needed depending on design
+
+3. **Post-Processing**
+   - Remove supports carefully
+   - Clean up any stringing
+   - Test fit on paddle shaft before final assembly
+   - Sand contact surfaces if needed for better fit
+
+### Customization
+
+The Fusion 360 source files are provided in the `source/` folders if you need to:
+- Adjust dimensions for your specific paddle
+- Modify mounting mechanism
+- Add custom features
+- Adapt for different Arduino models
+
+Feel free to modify and share your improvements!
 
 ## Assembly Tips
 
@@ -162,10 +200,11 @@ STL files will be added to this directory once finalized.
 
 ## Weight Considerations
 
-- Arduino Nano 33 BLE: ~5g
-- Battery (500mAh): ~15g
-- Mount and hardware: ~10g
-- **Total added weight: ~30g** (minimal impact on paddling)
+- 3D printed holder: 24g
+- Battery (1100mAh): 19g
+- **Complete assembly** (enclosure + holder + Arduino + all components): 72g
+
+The added weight is well-distributed along the paddle shaft and has minimal impact on paddling dynamics.
 
 ## Questions?
 
