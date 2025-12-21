@@ -4,14 +4,14 @@ class StrokeRateCard extends StatelessWidget {
   final double strokeRate;
   final bool compact;
   final VoidCallback? onInfo;
-  
+
   const StrokeRateCard({
     super.key,
     required this.strokeRate,
     this.compact = false,
     this.onInfo,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -24,7 +24,7 @@ class StrokeRateCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'STROKE RATE',
+                    'Stroke rate',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade700,
@@ -55,33 +55,30 @@ class StrokeRateCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'SPM',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               _getRateDescription(strokeRate),
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
         ),
       ),
     );
   }
-  
+
   Color _getColorForRate(double rate) {
     if (rate < 40) return Colors.blue;
     if (rate < 60) return Colors.green;
     if (rate < 80) return Colors.orange;
     return Colors.red;
   }
-  
+
   String _getRateDescription(double rate) {
     if (rate < 40) return 'Warm-up pace';
     if (rate < 60) return 'Training pace';

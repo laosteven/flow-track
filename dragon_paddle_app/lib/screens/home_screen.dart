@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/ble_service.dart';
 import '../services/stroke_analyzer.dart';
 import '../services/session_service.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isConnected = false;
   bool _keepAwake = false;
   bool _showConnectionBanner = false;
+  String _appVersion = '';
 
   List<DiscoveredDevice> _discoveredDevices = [];
 
@@ -40,12 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
   double _averagePower = 0.0;
 
   List<AccelerometerData> _recentData = [];
-  
+
   // Advanced metrics
   AdvancedMetrics _advancedMetrics = AdvancedMetrics.empty();
   TemperatureData _temperatureData = TemperatureData.empty();
   MagnetometerData? _lastMagData;
-  
+
   // Trajectory tracking
   List<TrajectoryPoint> _trajectoryPoints = [];
   final int _maxTrajectoryPoints = 100;
@@ -54,6 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeBle();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    });
   }
 
   Future<void> _initializeBle() async {
@@ -109,27 +119,27 @@ class _HomeScreenState extends State<HomeScreen> {
         _averagePower = _strokeAnalyzer.getAveragePower();
         _recentData = _strokeAnalyzer.getRecentHistory(count: 100);
       });
-      
+
       // Update trajectory with accelerometer position (integrate acceleration)
       if (_lastMagData != null) {
         _updateTrajectory(data, _lastMagData!);
       }
     });
-    
+
     // Listen to magnetometer data
     _bleService.magnetometerData.listen((data) {
       setState(() {
         _lastMagData = data;
       });
     });
-    
+
     // Listen to advanced metrics
     _bleService.advancedMetrics.listen((metrics) {
       setState(() {
         _advancedMetrics = metrics;
       });
     });
-    
+
     // Listen to temperature data
     _bleService.temperatureData.listen((tempData) {
       setState(() {
@@ -137,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
   }
-  
+
   void _updateTrajectory(AccelerometerData accel, MagnetometerData mag) {
     // Simplified trajectory visualization using raw sensor data
     // Note: This uses acceleration values directly as position coordinates
@@ -151,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       z: accel.z,
       timestamp: DateTime.now(),
     );
-    
+
     setState(() {
       _trajectoryPoints.add(point);
       // Keep only recent points
@@ -262,15 +272,13 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_isConnected)
             IconButton(
               icon: Icon(
-                _sessionService.isRecording
-                    ? Icons.mode_standby
-                    : Icons.rowing,
+                _sessionService.isRecording ? Icons.mode_standby : Icons.rowing,
                 color: _sessionService.isRecording ? Colors.red : null,
               ),
               onPressed: _toggleRecording,
               tooltip: _sessionService.isRecording
-                  ? 'Stop Recording'
-                  : 'Start Recording',
+                  ? 'Stop recording'
+                  : 'Start recording',
             ),
         ],
       ),
@@ -287,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.folder_open),
-                title: const Text('Saved Sessions'),
+                title: const Text('Saved sessions'),
                 onTap: () {
                   Navigator.of(context).pop();
                   _openSessions();
@@ -297,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (_isConnected)
                 ListTile(
                   leading: const Icon(Icons.refresh),
-                  title: const Text('Reset Statistics'),
+                  title: const Text('Reset statistics'),
                   onTap: () {
                     Navigator.of(context).pop();
                     _resetStats();
@@ -320,7 +328,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
-                  'App Version: 1.0.0',
+                  _appVersion.isNotEmpty
+                      ? 'App version: $_appVersion'
+                      : 'App version: loading...',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -397,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton.icon(
               onPressed: _toggleScan,
               icon: const Icon(Icons.search),
-              label: const Text('Scan for Devices'),
+              label: const Text('Scan for devices'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 30,
@@ -412,13 +422,13 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: _toggleScan,
-              child: const Text('Stop Scan'),
+              child: const Text('Stop scan'),
             ),
           ],
           if (_discoveredDevices.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
-              'Discovered Devices:',
+              'Discovered devices:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -436,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ListTile(
                       leading: const Icon(Icons.bluetooth, color: Colors.blue),
                       title: Text(
-                        device.name.isNotEmpty ? device.name : 'Unknown Device',
+                        device.name.isNotEmpty ? device.name : 'Unknown device',
                       ),
                       subtitle: Text(device.id),
                       trailing: ElevatedButton(
@@ -467,23 +477,17 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const SizedBox(height: 8),
 
-              StrokeRateCard(
-                strokeRate: _strokeRate,
-                compact: compact,
-              ),
+              StrokeRateCard(strokeRate: _strokeRate, compact: compact),
               const SizedBox(height: 12),
 
-              ConsistencyIndicator(
-                consistency: _consistency,
-                compact: compact,
-              ),
+              ConsistencyIndicator(consistency: _consistency, compact: compact),
               const SizedBox(height: 12),
 
               Row(
                 children: [
                   Expanded(
                     child: StatsCard(
-                      title: 'Total Strokes',
+                      title: 'Total strokes',
                       value: _totalStrokes.toString(),
                       icon: Icons.rowing,
                       color: Colors.blue,
@@ -493,7 +497,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: StatsCard(
-                      title: 'Avg Power',
+                      title: 'Avg power',
                       value: _averagePower.toStringAsFixed(1),
                       icon: Icons.speed,
                       color: Colors.orange,
@@ -510,15 +514,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: graphHeight,
               ),
               const SizedBox(height: 12),
-              
+
               // Advanced metrics
               // AdvancedMetricsCard(metrics: _advancedMetrics),
               // const SizedBox(height: 12),
-              
+
               // Temperature monitoring
               TemperatureCard(temperature: _temperatureData),
               const SizedBox(height: 12),
-              
+
               // 3D Trajectory visualization
               TrajectoryWidget(trajectoryPoints: _trajectoryPoints),
             ],
@@ -527,5 +531,4 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
 }

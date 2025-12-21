@@ -5,10 +5,7 @@ import '../models/sensor_data.dart';
 class TemperatureCard extends StatelessWidget {
   final TemperatureData temperature;
 
-  const TemperatureCard({
-    super.key,
-    required this.temperature,
-  });
+  const TemperatureCard({super.key, required this.temperature});
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +25,8 @@ class TemperatureCard extends StatelessWidget {
                 Text(
                   'Environment',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -60,14 +57,11 @@ class TemperatureCard extends StatelessWidget {
             Text(
               '${temperature.temperature.toStringAsFixed(1)}°C',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _getTempColor(temperature.temperature),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: _getTempColor(temperature.temperature),
+              ),
             ),
-            Text(
-              'Temperature',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text('Temperature', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
         Column(
@@ -81,14 +75,11 @@ class TemperatureCard extends StatelessWidget {
             Text(
               '${temperature.humidity.toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _getHumidityColor(temperature.humidity),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: _getHumidityColor(temperature.humidity),
+              ),
             ),
-            Text(
-              'Humidity',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text('Humidity', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ],
@@ -112,7 +103,7 @@ class TemperatureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'HIGH TEMPERATURE WARNING',
+                  'High temperature warning',
                   style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -122,10 +113,7 @@ class TemperatureCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Stay hydrated! Temperature is above 35°C',
-                  style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.red.shade700, fontSize: 12),
                 ),
               ],
             ),

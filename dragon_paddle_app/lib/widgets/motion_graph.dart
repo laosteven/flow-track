@@ -7,7 +7,7 @@ class MotionGraph extends StatelessWidget {
   final bool compact;
   final VoidCallback? onInfo;
   final double height;
-  
+
   const MotionGraph({
     super.key,
     required this.data,
@@ -15,7 +15,7 @@ class MotionGraph extends StatelessWidget {
     this.onInfo,
     this.height = 200,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -29,22 +29,24 @@ class MotionGraph extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Motion Pattern',
+                    'Motion pattern',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                if (onInfo != null) IconButton(icon: const Icon(Icons.info_outline, size: 18), onPressed: onInfo),
+                if (onInfo != null)
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, size: 18),
+                    onPressed: onInfo,
+                  ),
               ],
             ),
             const SizedBox(height: 16),
             SizedBox(
               height: height,
               child: data.isEmpty
-                  ? const Center(
-                      child: Text('Waiting for data...'),
-                    )
+                  ? const Center(child: Text('Waiting for data...'))
                   : LineChart(
                       LineChartData(
                         gridData: FlGridData(
@@ -135,28 +137,24 @@ class MotionGraph extends StatelessWidget {
       ),
     );
   }
-  
+
   List<FlSpot> _getSpots(List<AccelerometerData> data, String axis) {
     final spots = <FlSpot>[];
     for (int i = 0; i < data.length; i++) {
       final value = axis == 'x'
           ? data[i].x
           : axis == 'y'
-              ? data[i].y
-              : data[i].z;
+          ? data[i].y
+          : data[i].z;
       spots.add(FlSpot(i.toDouble(), value));
     }
     return spots;
   }
-  
+
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       children: [
-        Container(
-          width: 16,
-          height: 3,
-          color: color,
-        ),
+        Container(width: 16, height: 3, color: color),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 12)),
       ],

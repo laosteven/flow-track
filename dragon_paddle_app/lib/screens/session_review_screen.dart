@@ -207,7 +207,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                     children: [
                       Icon(Icons.image),
                       SizedBox(width: 12),
-                      Text('Generate Report'),
+                      Text('Generate report'),
                     ],
                   ),
                 ),

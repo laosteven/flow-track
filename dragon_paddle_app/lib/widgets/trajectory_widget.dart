@@ -7,10 +7,7 @@ import '../models/sensor_data.dart';
 class TrajectoryWidget extends StatelessWidget {
   final List<TrajectoryPoint> trajectoryPoints;
 
-  const TrajectoryWidget({
-    super.key,
-    required this.trajectoryPoints,
-  });
+  const TrajectoryWidget({super.key, required this.trajectoryPoints});
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +24,8 @@ class TrajectoryWidget extends StatelessWidget {
                 Text(
                   '3D Trajectory',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -39,9 +36,9 @@ class TrajectoryWidget extends StatelessWidget {
                   ? Center(
                       child: Text(
                         'Start paddling to see trajectory',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                       ),
                     )
                   : Row(
@@ -49,7 +46,7 @@ class TrajectoryWidget extends StatelessWidget {
                         Expanded(
                           child: _buildProjection(
                             context,
-                            'XY Plane (Top View)',
+                            'XY plane (top view)',
                             (p) => Offset(p.x, p.y),
                           ),
                         ),
@@ -57,7 +54,7 @@ class TrajectoryWidget extends StatelessWidget {
                         Expanded(
                           child: _buildProjection(
                             context,
-                            'XZ Plane (Side View)',
+                            'XZ plane (side view)',
                             (p) => Offset(p.x, p.z),
                           ),
                         ),
@@ -68,9 +65,9 @@ class TrajectoryWidget extends StatelessWidget {
             Center(
               child: Text(
                 '${trajectoryPoints.length} trajectory points',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey),
               ),
             ),
           ],
@@ -86,10 +83,7 @@ class TrajectoryWidget extends StatelessWidget {
   ) {
     return Column(
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(title, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 8),
         Expanded(
           child: Container(
@@ -115,10 +109,7 @@ class TrajectoryPainter extends CustomPainter {
   final List<TrajectoryPoint> points;
   final Offset Function(TrajectoryPoint) projection;
 
-  TrajectoryPainter({
-    required this.points,
-    required this.projection,
-  });
+  TrajectoryPainter({required this.points, required this.projection});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -152,7 +143,7 @@ class TrajectoryPainter extends CustomPainter {
 
     for (int i = 0; i < points.length; i++) {
       final offset = projection(points[i]);
-      
+
       // Normalize to canvas size
       final x = rangeX > 0
           ? padding + (offset.dx - minX) / rangeX * (size.width - 2 * padding)
@@ -168,12 +159,8 @@ class TrajectoryPainter extends CustomPainter {
       }
 
       // Color gradient from blue (start) to red (end)
-      paint.color = Color.lerp(
-        Colors.blue,
-        Colors.red,
-        i / points.length,
-      )!;
-      
+      paint.color = Color.lerp(Colors.blue, Colors.red, i / points.length)!;
+
       // Draw point
       canvas.drawCircle(Offset(x, y), 2, paint);
     }

@@ -42,6 +42,7 @@ dependencies:
   uuid: ^4.1.0
   screenshot: ^3.0.0             # For generating session report images
   share_plus: ^10.1.3            # For sharing report images
+  package_info_plus: ^9.0.0      # For reading app version from pubspec
 
 dev_dependencies:
   flutter_test:

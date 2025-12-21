@@ -41,14 +41,14 @@ class _SessionListScreenState extends State<SessionListScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename Session'),
+        title: const Text('Rename session'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
-                labelText: 'Session Name',
+                labelText: 'Session name',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -56,7 +56,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             TextField(
               controller: paddlerController,
               decoration: const InputDecoration(
-                labelText: 'Paddler Name',
+                labelText: 'Paddler name',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -101,7 +101,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved Sessions')),
+      appBar: AppBar(title: const Text('Saved sessions')),
       body: _files.isEmpty
           ? const Center(child: Text('No sessions found'))
           : ListView.builder(

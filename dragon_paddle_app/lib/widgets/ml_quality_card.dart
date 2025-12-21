@@ -5,10 +5,7 @@ import '../models/sensor_data.dart';
 class MLQualityCard extends StatelessWidget {
   final MLClassifications ml;
 
-  const MLQualityCard({
-    super.key,
-    required this.ml,
-  });
+  const MLQualityCard({super.key, required this.ml});
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +20,10 @@ class MLQualityCard extends StatelessWidget {
                 const Icon(Icons.psychology, color: Colors.deepPurple),
                 const SizedBox(width: 8),
                 Text(
-                  'AI Stroke Analysis',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  'AI stroke analysis',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -35,7 +32,7 @@ class MLQualityCard extends StatelessWidget {
             const SizedBox(height: 16),
             _buildQualityBar(
               context,
-              label: 'Clean Stroke',
+              label: 'Clean stroke',
               score: ml.cleanStrokeScore,
               icon: Icons.check_circle,
               goodDesc: 'Clean',
@@ -53,7 +50,7 @@ class MLQualityCard extends StatelessWidget {
             const SizedBox(height: 12),
             _buildQualityBar(
               context,
-              label: 'Paddle Angle',
+              label: 'Paddle angle',
               score: ml.angleQuality,
               icon: Icons.straighten,
               goodDesc: 'Optimal',
@@ -62,7 +59,7 @@ class MLQualityCard extends StatelessWidget {
             const SizedBox(height: 12),
             _buildQualityBar(
               context,
-              label: 'Exit Timing',
+              label: 'Exit timing',
               score: ml.exitQuality,
               icon: Icons.eject,
               goodDesc: 'Full stroke',
@@ -86,24 +83,21 @@ class MLQualityCard extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _getQualityColor(overall),
-          width: 2,
-        ),
+        border: Border.all(color: _getQualityColor(overall), width: 2),
       ),
       child: Column(
         children: [
           Text(
-            'Overall Quality',
+            'Overall quality',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
             '${(overall * 100).toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: _getQualityColor(overall),
-                ),
+              fontWeight: FontWeight.bold,
+              color: _getQualityColor(overall),
+            ),
           ),
           Text(
             ml.qualityDescription,
@@ -135,9 +129,9 @@ class MLQualityCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
               ),
             ),
             Text(
