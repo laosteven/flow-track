@@ -41,6 +41,8 @@ const unsigned long TEMP_READ_INTERVAL = 1000; // Read temp every second
 // LED for visual feedback
 const int LED_PIN = LED_BUILTIN;
 
+#define DEVICE_NAME "FlowTrack"
+
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
 #define OLED_RESET -1
@@ -167,7 +169,7 @@ void setup()
   Serial.println("✓ BLE initialized");
 
   // Configure BLE
-  BLE.setLocalName("FlowTrack");
+  BLE.setLocalName(DEVICE_NAME);
   BLE.setAdvertisedService(imuService);
 
   imuService.addCharacteristic(accelChar);
@@ -181,7 +183,7 @@ void setup()
   // Give BLE stack time to fully initialize
   delay(1000);
 
-  Serial.println("✓ BLE advertising as 'FlowTrack'");
+  Serial.println("✓ BLE advertising as '" DEVICE_NAME "'");
   Serial.println("========================================");
   Serial.println("Streaming:");
   Serial.println("  • Raw accelerometer data");
@@ -199,22 +201,24 @@ void setup()
   }
   else
   {
-    display.setRotation(0); // Rotate 90° counter-clockwise
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.println("Flow Track");
-    display.println("Ready!");
-    display.display();
     Serial.println("✓ OLED initialized");
   }
 
   // Show initial status on OLED
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.println("Flow Track");
-  display.println("Waiting for BLE...");
+  display.drawCircle(3, 3, 2, SSD1306_WHITE);
+  display.setCursor(8, 0);
+  display.print("Standby");
+  display.drawLine(0, 8, 127, 8, SSD1306_WHITE); // Separator line
+  display.setCursor(0, 10);
+  display.print("Name: ");
+  display.print(DEVICE_NAME);
+  display.setCursor(0, 24);
+  display.print(BLE.address());
   display.display();
 
   // Visual ready indication
@@ -298,9 +302,10 @@ void loop()
 
         // Read temperature periodically
         if (currentTime - lastTempRead >= TEMP_READ_INTERVAL)
-        {currentTemp = HS300x.readTemperature();
+        {
+          currentTemp = HS300x.readTemperature();
           currentHumidity = HS300x.readHumidity();
-          
+
           // Check for sensor errors
           if (isnan(currentTemp) || currentTemp < -40 || currentTemp > 85)
           {
@@ -310,7 +315,7 @@ void loop()
           {
             currentHumidity = 0;
           }
-          
+
           lastTempRead = currentTime;
         }
 
@@ -334,7 +339,7 @@ void loop()
           Serial.print(az, 3);
           Serial.print("] | Mag: ");
           Serial.println(accelMag, 3);
-          
+
           Serial.print("Gyro:  [");
           Serial.print(gx, 3);
           Serial.print(", ");
@@ -343,7 +348,7 @@ void loop()
           Serial.print(gz, 3);
           Serial.print("] | Mag: ");
           Serial.println(gyroMag, 3);
-          
+
           Serial.print("Mag:   [");
           Serial.print(mx, 3);
           Serial.print(", ");
@@ -351,60 +356,97 @@ void loop()
           Serial.print(", ");
           Serial.print(mz, 3);
           Serial.println("]");
-          
+
           Serial.print("Temp: ");
           Serial.print(currentTemp, 2);
           Serial.print("°C | Humidity: ");
           Serial.print(currentHumidity, 1);
           Serial.println("%");
           Serial.println("=======================");
-          
+
           lastPrint = currentTime;
         }
 
-        // Update OLED display every 1s - rotate through sensor views
+        // Update OLED display every 200ms for smooth animation
         static unsigned long lastOledUpdate = 0;
-        static int displayMode = 0;
-        if (currentTime - lastOledUpdate > 1000)
+        static float accelHistory[64] = {0}; // Store acceleration history for graph (64 samples)
+        static int historyIndex = 0;
+
+        if (currentTime - lastOledUpdate > 200)
         {
           lastOledUpdate = currentTime;
-          
+
+          // Update acceleration history for graph
+          accelHistory[historyIndex] = accelMag;
+          historyIndex = (historyIndex + 1) % 64;
+
           display.clearDisplay();
-          display.setCursor(0, 0);
           display.setTextSize(1);
-          
-          // Rotate through 2 display modes every 10 seconds
-          displayMode = (currentTime / 10000) % 2;
-          
-          switch(displayMode)
+
+          // === TOP SECTION: Status Bar ===
+          // BLE Connection indicator with text
+          display.fillCircle(3, 3, 2, SSD1306_WHITE);
+          display.setCursor(8, 0);
+          display.print("Connected");
+
+          // Signal strength bars (right side)
+          for (int i = 0; i < 4; i++)
           {
-            case 0: // IMU data
-              display.println("IMU DATA");
-              display.println("============");
-              display.print("Acc:");
-              display.println(accelMag, 1);
-              display.print("Gyr:");
-              display.println(gyroMag, 1);
-              display.print("Mag:[");
-              display.print(mx, 0);
-              display.print(",");
-              display.print(my, 0);
-              display.println("]");
-              display.println("BLE: OK");
-              break;
-              
-            case 1: // Temperature
-              display.println("ENVIRONMENT");
-              display.println("============");
-              display.print("Temp:");
-              display.print(currentTemp, 1);
-              display.println("C");
-              display.print("Humid:");
-              display.print(currentHumidity, 0);
-              display.println("%");
-              display.println("BLE: OK");
-              break;
+            int barHeight = (i + 1) * 2;
+            display.fillRect(128 - 18 + (i * 4), 6 - barHeight, 2, barHeight, SSD1306_WHITE);
           }
+
+          display.drawLine(0, 8, 127, 8, SSD1306_WHITE); // Separator line
+
+          // === MIDDLE SECTION: Data in columns (more compact) ===
+          int row1 = 10;
+          int row2 = 18;
+          int col1 = 0;
+          int col2 = 72;
+
+          // Column 1: Accelerometer
+          display.setCursor(col1, row1);
+          display.print("ACC:");
+          display.setCursor(col1 + 28, row1);
+          display.print(accelMag, 1);
+
+          // Column 2: Gyroscope
+          display.setCursor(col2, row1);
+          display.print("GYR:");
+          display.setCursor(col2 + 28, row1);
+          display.print(gyroMag, 1);
+
+          // Column 1: Temperature
+          display.setCursor(col1, row2);
+          display.print("TMP:");
+          display.setCursor(col1 + 28, row2);
+          display.print(currentTemp, 1);
+          display.print("C");
+
+          // Column 2: Humidity
+          display.setCursor(col2, row2);
+          display.print("HUM:");
+          display.setCursor(col2 + 28, row2);
+          display.print((int)currentHumidity);
+          display.print("%");
+
+          // === BOTTOM SECTION: Acceleration Graph (8 pixels tall) ===
+          // Draw graph from y=24 to y=31 (8 pixels tall)
+          int graphBottom = 31;
+          int graphHeight = 6;
+
+          // Draw every other sample to fit 64 samples in 128 pixels (2 pixels per sample)
+          for (int i = 0; i < 64; i++)
+          {
+            int x = i * 2; // Each sample takes 2 pixels width
+            float movement = accelHistory[i] - 1.0;
+            int barHeight = constrain((int)(movement * 8), 1, graphHeight);
+            if (barHeight > 0)
+            {
+              display.fillRect(x, graphBottom - barHeight + 1, 2, barHeight, SSD1306_WHITE);
+            }
+          }
+
           display.display();
         }
       }
@@ -416,12 +458,19 @@ void loop()
     Serial.println("");
     Serial.print("✗ Disconnected from: ");
     Serial.println(central.address());
-    
+
     // Show disconnected on OLED
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.println("Flow Track");
-    display.println("Waiting for BLE...");
+    display.drawCircle(3, 3, 2, SSD1306_WHITE);
+    display.setCursor(8, 0);
+    display.print("Disconnected");
+    display.drawLine(0, 8, 127, 8, SSD1306_WHITE); // Separator line
+    display.setCursor(0, 10);
+    display.print("Name: ");
+    display.print(DEVICE_NAME);
+    display.setCursor(0, 24);
+    display.print(BLE.address());
     display.display();
   }
   delay(1);
