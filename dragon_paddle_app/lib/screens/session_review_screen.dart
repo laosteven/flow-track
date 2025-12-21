@@ -2,9 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/session_service.dart';
 import '../services/stroke_analyzer.dart';
 import '../models/sensor_data.dart';
+import '../widgets/session_report_widget.dart';
 
 class SessionReviewScreen extends StatefulWidget {
   final File file;
@@ -29,6 +33,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   List<double> _spmSeries = [];
   List<double> _consistencySeries = [];
   List<double> _avgPowerSeries = [];
+  final ScreenshotController _screenshotController = ScreenshotController();
 
   @override
   void initState() {
@@ -140,23 +145,83 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
         appBar: AppBar(
           title: Text('Review: $displayTitle'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: () async {
-                final csv = await widget.sessionService.exportSessionCsv(
-                  widget.file,
-                );
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Exported CSV: $csv')));
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'export':
+                    final csv = await widget.sessionService.exportSessionCsv(
+                      widget.file,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Exported CSV: $csv')),
+                      );
+                    }
+                    break;
+                  case 'report':
+                    await _generateReport();
+                    break;
+                  case 'delete':
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Delete session?'),
+                        content: const Text(
+                          'Are you sure you want to delete this session?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await widget.sessionService.deleteSession(widget.file);
+                      if (mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    }
+                    break;
+                }
               },
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () async {
-                await widget.sessionService.deleteSession(widget.file);
-                Navigator.of(context).pop();
-              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'export',
+                  child: Row(
+                    children: [
+                      Icon(Icons.download),
+                      SizedBox(width: 12),
+                      Text('Export CSV'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'report',
+                  child: Row(
+                    children: [
+                      Icon(Icons.image),
+                      SizedBox(width: 12),
+                      Text('Generate Report'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
           bottom: const TabBar(
@@ -516,5 +581,190 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             DeviceOrientation.portraitDown,
           ]);
         });
+  }
+
+  Future<void> _generateReport() async {
+    try {
+      final title = widget.file.path.split(Platform.pathSeparator).last;
+      final paddlerName = _data?['paddlerName'] as String? ?? '';
+      final strokeRate = _analyzer.getStrokeRate();
+      final consistency = _analyzer.getConsistency();
+      final total = _analyzer.getTotalStrokes();
+      final avgPower = _analyzer.getAveragePower();
+
+      // Parse filename to extract date/time (format: 2025-12-21_01-58-40.json)
+      String formattedDate = title;
+      try {
+        final nameWithoutExt = title.replaceAll('.json', '');
+        final parts = nameWithoutExt.split('_');
+        if (parts.length == 2) {
+          final dateParts = parts[0].split('-');
+          final timeParts = parts[1].split('-');
+          if (dateParts.length == 3 && timeParts.length == 3) {
+            final dateTime = DateTime(
+              int.parse(dateParts[0]),
+              int.parse(dateParts[1]),
+              int.parse(dateParts[2]),
+              int.parse(timeParts[0]),
+              int.parse(timeParts[1]),
+              int.parse(timeParts[2]),
+            );
+            // Format as: December 21, 2025 at 1:58 AM
+            final months = [
+              'January',
+              'February',
+              'March',
+              'April',
+              'May',
+              'June',
+              'July',
+              'August',
+              'September',
+              'October',
+              'November',
+              'December',
+            ];
+            final hour = dateTime.hour;
+            final minute = dateTime.minute.toString().padLeft(2, '0');
+            final amPm = hour >= 12 ? 'PM' : 'AM';
+            final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+            formattedDate =
+                '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year} at $hour12:$minute $amPm';
+          }
+        }
+      } catch (_) {
+        // If parsing fails, use original filename
+      }
+
+      // Navigate to report screen where we can capture it properly
+      if (mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => _ReportCaptureScreen(
+              screenshotController: _screenshotController,
+              sessionName: formattedDate,
+              paddlerName: paddlerName,
+              strokeRate: strokeRate,
+              consistency: consistency,
+              totalStrokes: total,
+              avgPower: avgPower,
+              magnitudes: _magnitudes,
+              spmSeries: _spmSeries,
+              consistencySeries: _consistencySeries,
+              avgPowerSeries: _avgPowerSeries,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error generating report: $e')));
+      }
+    }
+  }
+}
+
+// Helper screen to render and capture the report
+class _ReportCaptureScreen extends StatefulWidget {
+  final ScreenshotController screenshotController;
+  final String sessionName;
+  final String paddlerName;
+  final double strokeRate;
+  final double consistency;
+  final int totalStrokes;
+  final double avgPower;
+  final List<double> magnitudes;
+  final List<double> spmSeries;
+  final List<double> consistencySeries;
+  final List<double> avgPowerSeries;
+
+  const _ReportCaptureScreen({
+    required this.screenshotController,
+    required this.sessionName,
+    required this.paddlerName,
+    required this.strokeRate,
+    required this.consistency,
+    required this.totalStrokes,
+    required this.avgPower,
+    required this.magnitudes,
+    required this.spmSeries,
+    required this.consistencySeries,
+    required this.avgPowerSeries,
+  });
+
+  @override
+  State<_ReportCaptureScreen> createState() => _ReportCaptureScreenState();
+}
+
+class _ReportCaptureScreenState extends State<_ReportCaptureScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Capture after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _captureAndShare();
+    });
+  }
+
+  Future<void> _captureAndShare() async {
+    try {
+      // Wait a bit for rendering to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Capture the screenshot
+      final image = await widget.screenshotController.capture();
+      if (image == null) {
+        throw Exception('Failed to capture screenshot');
+      }
+
+      // Save to temporary directory
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'report_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(image);
+
+      // Pop this screen
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Share the image
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Session Report - ${widget.paddlerName}',
+        text: 'Session report for ${widget.sessionName}',
+      );
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Screenshot(
+        controller: widget.screenshotController,
+        child: SessionReportWidget(
+          sessionName: widget.sessionName,
+          paddlerName: widget.paddlerName,
+          strokeRate: widget.strokeRate,
+          consistency: widget.consistency,
+          totalStrokes: widget.totalStrokes,
+          avgPower: widget.avgPower,
+          magnitudes: widget.magnitudes,
+          spmSeries: widget.spmSeries,
+          consistencySeries: widget.consistencySeries,
+          avgPowerSeries: widget.avgPowerSeries,
+        ),
+      ),
+    );
   }
 }

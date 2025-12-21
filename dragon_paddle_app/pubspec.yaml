@@ -40,6 +40,8 @@ dependencies:
   wakelock_plus: ^1.4.0
   path_provider: ^2.0.15
   uuid: ^4.1.0
+  screenshot: ^3.0.0             # For generating session report images
+  share_plus: ^10.1.3            # For sharing report images
 
 dev_dependencies:
   flutter_test:
