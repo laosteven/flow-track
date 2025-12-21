@@ -1,4 +1,4 @@
-package com.example.dragon_paddle_app
+package com.flowtrack.app
 
 import io.flutter.embedding.android.FlutterActivity
 

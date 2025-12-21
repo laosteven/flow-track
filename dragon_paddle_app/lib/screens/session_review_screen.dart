@@ -10,7 +10,11 @@ class SessionReviewScreen extends StatefulWidget {
   final File file;
   final SessionService sessionService;
 
-  const SessionReviewScreen({super.key, required this.file, required this.sessionService});
+  const SessionReviewScreen({
+    super.key,
+    required this.file,
+    required this.sessionService,
+  });
 
   @override
   State<SessionReviewScreen> createState() => _SessionReviewScreenState();
@@ -63,7 +67,8 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
         int nearest = 0;
         int bestDiff = 1 << 30;
         for (int i = 0; i < samples.length; i++) {
-          final diff = (samples[i].timestamp.difference(ts).inMilliseconds).abs();
+          final diff = (samples[i].timestamp.difference(ts).inMilliseconds)
+              .abs();
           if (diff < bestDiff) {
             bestDiff = diff;
             nearest = i;
@@ -76,7 +81,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       // compute SPM series from strokeTimes (intervals)
       _spmSeries = [];
       for (int i = 1; i < strokeTimes.length; i++) {
-        final dt = strokeTimes[i].difference(strokeTimes[i - 1]).inMilliseconds / 1000.0;
+        final dt =
+            strokeTimes[i].difference(strokeTimes[i - 1]).inMilliseconds /
+            1000.0;
         if (dt > 0) {
           _spmSeries.add(60.0 / dt);
         }
@@ -84,7 +91,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     } else {
       // Fallback: mark local peaks
       for (int i = 1; i < _magnitudes.length - 1; i++) {
-        if (_magnitudes[i] > _magnitudes[i - 1] && _magnitudes[i] > _magnitudes[i + 1] && _magnitudes[i] > 0.8) {
+        if (_magnitudes[i] > _magnitudes[i - 1] &&
+            _magnitudes[i] > _magnitudes[i + 1] &&
+            _magnitudes[i] > 0.8) {
           _strokeIndices.add(i);
         }
       }
@@ -116,6 +125,10 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.file.path.split(Platform.pathSeparator).last;
+    final paddlerName = _data?['paddlerName'] as String? ?? '';
+    final displayTitle = paddlerName.isNotEmpty
+        ? '$paddlerName - $title'
+        : title;
     final strokeRate = _analyzer.getStrokeRate();
     final consistency = _analyzer.getConsistency();
     final total = _analyzer.getTotalStrokes();
@@ -125,13 +138,17 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Review: $title'),
+          title: Text('Review: $displayTitle'),
           actions: [
             IconButton(
               icon: const Icon(Icons.download),
               onPressed: () async {
-                final csv = await widget.sessionService.exportSessionCsv(widget.file);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Exported CSV: $csv')));
+                final csv = await widget.sessionService.exportSessionCsv(
+                  widget.file,
+                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Exported CSV: $csv')));
               },
             ),
             IconButton(
@@ -143,14 +160,17 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             ),
           ],
           bottom: const TabBar(
-            tabs: [Tab(text: 'Overview'), Tab(text: 'Graphs')],
+            tabs: [
+              Tab(text: 'Overview'),
+              Tab(text: 'Graphs'),
+            ],
           ),
         ),
         body: _data == null
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
                   // Overview tab - 2-column grid
                   Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -166,14 +186,25 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Average SPM', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'Average SPM',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 6),
-                                Text(strokeRate.toStringAsFixed(1), style: Theme.of(context).textTheme.titleLarge),
+                                Text(
+                                  strokeRate.toStringAsFixed(1),
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
                                 SizedBox(
                                   height: 40,
-                                  child: _miniChart(_spmSeries.isNotEmpty ? _spmSeries : _magnitudes, color: Colors.deepPurple),
+                                  child: _miniChart(
+                                    _spmSeries.isNotEmpty
+                                        ? _spmSeries
+                                        : _magnitudes,
+                                    color: Colors.deepPurple,
+                                  ),
                                 ),
                               ],
                             ),
@@ -186,14 +217,27 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Consistency', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'Consistency',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 6),
-                                Text('${consistency.toStringAsFixed(1)}%', style: Theme.of(context).textTheme.titleLarge),
+                                Text(
+                                  '${consistency.toStringAsFixed(1)}%',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
                                 SizedBox(
                                   height: 40,
-                                  child: _miniChart(_consistencySeries.isNotEmpty ? _consistencySeries : (_strokeMagnitudes.isNotEmpty ? _strokeMagnitudes : _magnitudes), color: Colors.teal),
+                                  child: _miniChart(
+                                    _consistencySeries.isNotEmpty
+                                        ? _consistencySeries
+                                        : (_strokeMagnitudes.isNotEmpty
+                                              ? _strokeMagnitudes
+                                              : _magnitudes),
+                                    color: Colors.teal,
+                                  ),
                                 ),
                               ],
                             ),
@@ -206,14 +250,25 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Total Strokes', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'Total Strokes',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 6),
-                                Text(total.toString(), style: Theme.of(context).textTheme.titleLarge),
+                                Text(
+                                  total.toString(),
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
                                 SizedBox(
                                   height: 40,
-                                  child: _miniChart(_strokeMagnitudes.isNotEmpty ? _strokeMagnitudes : _magnitudes, color: Colors.blue),
+                                  child: _miniChart(
+                                    _strokeMagnitudes.isNotEmpty
+                                        ? _strokeMagnitudes
+                                        : _magnitudes,
+                                    color: Colors.blue,
+                                  ),
                                 ),
                               ],
                             ),
@@ -226,14 +281,25 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Average Power', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'Average Power',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 6),
-                                Text(avgPower.toStringAsFixed(2), style: Theme.of(context).textTheme.titleLarge),
+                                Text(
+                                  avgPower.toStringAsFixed(2),
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
                                 SizedBox(
                                   height: 40,
-                                  child: _miniChart(_avgPowerSeries.isNotEmpty ? _avgPowerSeries : _magnitudes, color: Colors.orange),
+                                  child: _miniChart(
+                                    _avgPowerSeries.isNotEmpty
+                                        ? _avgPowerSeries
+                                        : _magnitudes,
+                                    color: Colors.orange,
+                                  ),
                                 ),
                               ],
                             ),
@@ -250,13 +316,29 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _chartCard('Magnitude', _magnitudes, color: Colors.blue),
+                          _chartCard(
+                            'Magnitude',
+                            _magnitudes,
+                            color: Colors.blue,
+                          ),
                           const SizedBox(height: 12),
-                          _chartCard('SPM', _spmSeries, color: Colors.deepPurple),
+                          _chartCard(
+                            'SPM',
+                            _spmSeries,
+                            color: Colors.deepPurple,
+                          ),
                           const SizedBox(height: 12),
-                          _chartCard('Consistency', _consistencySeries, color: Colors.teal),
+                          _chartCard(
+                            'Consistency',
+                            _consistencySeries,
+                            color: Colors.teal,
+                          ),
                           const SizedBox(height: 12),
-                          _chartCard('Average Power', _avgPowerSeries, color: Colors.orange),
+                          _chartCard(
+                            'Average Power',
+                            _avgPowerSeries,
+                            color: Colors.orange,
+                          ),
                           const SizedBox(height: 12),
                         ],
                       ),
@@ -270,7 +352,10 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
   Widget _miniChart(List<double> values, {Color color = Colors.blue}) {
     if (values.isEmpty) return const SizedBox.shrink();
-    final spots = List<FlSpot>.generate(values.length, (i) => FlSpot(i.toDouble(), values[i]));
+    final spots = List<FlSpot>.generate(
+      values.length,
+      (i) => FlSpot(i.toDouble(), values[i]),
+    );
     return LineChart(
       LineChartData(
         lineBarsData: [
@@ -280,7 +365,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             color: color.withOpacity(0.9),
             barWidth: 1.4,
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [color.withOpacity(0.18), color.withOpacity(0.04)])),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [color.withOpacity(0.18), color.withOpacity(0.04)],
+              ),
+            ),
           ),
         ],
         gridData: FlGridData(show: false),
@@ -290,31 +380,64 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     );
   }
 
-  Widget _chartCard(String title, List<double> values, {Color color = Colors.blue}) {
+  Widget _chartCard(
+    String title,
+    List<double> values, {
+    Color color = Colors.blue,
+  }) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))), IconButton(icon: const Icon(Icons.open_in_full), onPressed: () => _openFullscreenChart(title, values, color))]),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.open_in_full),
+                  onPressed: () => _openFullscreenChart(title, values, color),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             SizedBox(
               height: 200,
               child: values.isEmpty
-                  ? Center(child: Text('No data', style: Theme.of(context).textTheme.bodySmall))
+                  ? Center(
+                      child: Text(
+                        'No data',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    )
                   : LineChart(
                       LineChartData(
                         lineTouchData: const LineTouchData(enabled: true),
                         lineBarsData: [
                           LineChartBarData(
-                            spots: List.generate(values.length, (i) => FlSpot(i.toDouble(), values[i])),
+                            spots: List.generate(
+                              values.length,
+                              (i) => FlSpot(i.toDouble(), values[i]),
+                            ),
                             isCurved: true,
                             curveSmoothness: 0.2,
                             color: color,
                             barWidth: 2,
                             dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [color.withOpacity(0.25), color.withOpacity(0.05)])),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  color.withOpacity(0.25),
+                                  color.withOpacity(0.05),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                         gridData: FlGridData(show: true),
@@ -331,36 +454,67 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
   void _openFullscreenChart(String title, List<double> values, Color color) {
     // Force landscape for fullscreen chart, add padding so the bottom isn't cut off
-    SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 36.0, vertical: 24.0),
-        child: values.isEmpty
-            ? Center(child: Text('No data', style: Theme.of(context).textTheme.bodyLarge))
-            : LineChart(
-                LineChartData(
-                  lineTouchData: const LineTouchData(enabled: true),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: List.generate(values.length, (i) => FlSpot(i.toDouble(), values[i])),
-                      isCurved: true,
-                      curveSmoothness: 0.2,
-                      color: color,
-                      barWidth: 2.5,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [color.withOpacity(0.25), color.withOpacity(0.05)])),
-                    ),
-                  ],
-                  gridData: FlGridData(show: true),
-                  titlesData: FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: Text(title)),
+              body: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 36.0,
+                  vertical: 24.0,
                 ),
+                child: values.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No data',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      )
+                    : LineChart(
+                        LineChartData(
+                          lineTouchData: const LineTouchData(enabled: true),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: List.generate(
+                                values.length,
+                                (i) => FlSpot(i.toDouble(), values[i]),
+                              ),
+                              isCurved: true,
+                              curveSmoothness: 0.2,
+                              color: color,
+                              barWidth: 2.5,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    color.withOpacity(0.25),
+                                    color.withOpacity(0.05),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          gridData: FlGridData(show: true),
+                          titlesData: FlTitlesData(show: false),
+                          borderData: FlBorderData(show: false),
+                        ),
+                      ),
               ),
-      ),
-    ))).then((_) async {
-      // restore portrait orientations
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-    });
+            ),
+          ),
+        )
+        .then((_) async {
+          // restore portrait orientations
+          await SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ]);
+        });
   }
 }

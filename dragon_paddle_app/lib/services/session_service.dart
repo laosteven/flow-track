@@ -24,8 +24,13 @@ class SessionService {
     _startTime = DateTime.now();
     // prepare temp file for streaming samples as NDJSON
     final dir = await getApplicationDocumentsDirectory();
-    _tempFile = File('${dir.path}/.recording_tmp_${_startTime!.millisecondsSinceEpoch}.ndjson');
-    _tempSink = _tempFile!.openWrite(mode: FileMode.writeOnlyAppend, encoding: utf8);
+    _tempFile = File(
+      '${dir.path}/.recording_tmp_${_startTime!.millisecondsSinceEpoch}.ndjson',
+    );
+    _tempSink = _tempFile!.openWrite(
+      mode: FileMode.writeOnlyAppend,
+      encoding: utf8,
+    );
   }
 
   /// Start recording and subscribe to a [StrokeAnalyzer] to capture stroke timestamps
@@ -47,7 +52,12 @@ class SessionService {
           final spm = analyzer.getStrokeRate();
           final consistency = analyzer.getConsistency();
           final avgPower = analyzer.getAveragePower();
-          _metrics.add({'t': now, 'spm': spm, 'consistency': consistency, 'avgPower': avgPower});
+          _metrics.add({
+            't': now,
+            'spm': spm,
+            'consistency': consistency,
+            'avgPower': avgPower,
+          });
         } catch (_) {}
       });
     } catch (_) {
@@ -71,14 +81,20 @@ class SessionService {
     // write to in-memory buffer (for short sessions) and stream to temp file for long sessions
     _buffer.add(sample);
     try {
-      final line = json.encode({'t': sample.timestamp.toIso8601String(), 'x': sample.x, 'y': sample.y, 'z': sample.z});
+      final line = json.encode({
+        't': sample.timestamp.toIso8601String(),
+        'x': sample.x,
+        'y': sample.y,
+        'z': sample.z,
+      });
       _tempSink?.writeln(line);
     } catch (_) {}
   }
 
-  Future<String> saveSession({String? name}) async {
+  Future<String> saveSession({String? name, String? paddlerName}) async {
     final timestamp = _startTime ?? DateTime.now();
-    final formatted = '${timestamp.year.toString().padLeft(4, '0')}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}-${timestamp.minute.toString().padLeft(2, '0')}-${timestamp.second.toString().padLeft(2, '0')}';
+    final formatted =
+        '${timestamp.year.toString().padLeft(4, '0')}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}-${timestamp.minute.toString().padLeft(2, '0')}-${timestamp.second.toString().padLeft(2, '0')}';
     final sessionName = name ?? formatted;
 
     // If a temp file exists, prefer streaming source to build samples without holding everything in memory
@@ -99,23 +115,37 @@ class SessionService {
       } catch (_) {}
       _tempFile = null;
     } else {
-      jsonSamples = _buffer.map((s) => {
-            't': s.timestamp.toIso8601String(),
-            'x': s.x,
-            'y': s.y,
-            'z': s.z,
-          }).toList();
+      jsonSamples = _buffer
+          .map(
+            (s) => {
+              't': s.timestamp.toIso8601String(),
+              'x': s.x,
+              'y': s.y,
+              'z': s.z,
+            },
+          )
+          .toList();
     }
 
     final session = {
       'name': sessionName,
+      'paddlerName': paddlerName ?? '',
       'startedAt': timestamp.toIso8601String(),
       'samples': jsonSamples,
       'strokes': _strokeEvents,
       'metrics': _metrics,
     };
 
-    final dir = await getApplicationDocumentsDirectory();
+    // Save to Downloads folder for easier access
+    Directory? dir;
+    if (Platform.isAndroid) {
+      dir = Directory('/storage/emulated/0/Download');
+      if (!await dir.exists()) {
+        dir = await getApplicationDocumentsDirectory();
+      }
+    } else {
+      dir = await getApplicationDocumentsDirectory();
+    }
     String filenameBase = sessionName.replaceAll(' ', '_');
     String filePath = '${dir.path}/$filenameBase.json';
     // avoid collisions by appending a counter
@@ -125,14 +155,29 @@ class SessionService {
       counter++;
     }
     final file = File(filePath);
-    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(session));
+    await file.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(session),
+    );
     return file.path;
   }
 
   Future<List<FileSystemEntity>> listSessions() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final files = dir.listSync().where((f) => f.path.endsWith('.json')).toList();
-    files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+    Directory dir;
+    if (Platform.isAndroid) {
+      dir = Directory('/storage/emulated/0/Download');
+      if (!await dir.exists()) {
+        dir = await getApplicationDocumentsDirectory();
+      }
+    } else {
+      dir = await getApplicationDocumentsDirectory();
+    }
+    final files = dir
+        .listSync()
+        .where((f) => f.path.endsWith('.json'))
+        .toList();
+    files.sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
     return files;
   }
 
@@ -150,6 +195,7 @@ class SessionService {
       buffer.writeln('${s['t']},${s['x']},${s['y']},${s['z']}');
     }
 
+    // Save CSV to same directory as JSON file (already in Downloads on Android)
     final out = File(file.path.replaceAll('.json', '.csv'));
     await out.writeAsString(buffer.toString());
     return out.path;
@@ -157,5 +203,41 @@ class SessionService {
 
   Future<void> deleteSession(File file) async {
     if (await file.exists()) await file.delete();
+  }
+
+  Future<void> renameSession(
+    File file,
+    String newName,
+    String paddlerName,
+  ) async {
+    // Load existing session
+    final map = await loadSession(file);
+
+    // Update name and paddler name
+    map['name'] = newName;
+    map['paddlerName'] = paddlerName;
+
+    // Save to new file
+    final dir = file.parent;
+    final newFilename = '${newName.replaceAll(' ', '_')}.json';
+    final newPath = '${dir.path}/$newFilename';
+
+    // Handle name collisions
+    String finalPath = newPath;
+    int counter = 1;
+    while (await File(finalPath).exists() && finalPath != file.path) {
+      finalPath = '${dir.path}/${newName.replaceAll(' ', '_')}_$counter.json';
+      counter++;
+    }
+
+    final newFile = File(finalPath);
+    await newFile.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(map),
+    );
+
+    // Delete old file if name changed
+    if (newFile.path != file.path) {
+      await file.delete();
+    }
   }
 }

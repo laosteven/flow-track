@@ -28,6 +28,76 @@ class _SessionListScreenState extends State<SessionListScreen> {
     });
   }
 
+  Future<void> _showRenameDialog(File file, String currentName) async {
+    // Load session to get current paddler name
+    final session = await widget.sessionService.loadSession(file);
+    final currentPaddlerName = session['paddlerName'] as String? ?? '';
+
+    final nameController = TextEditingController(
+      text: currentName.replaceAll('.json', ''),
+    );
+    final paddlerController = TextEditingController(text: currentPaddlerName);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Session'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Session Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: paddlerController,
+              decoration: const InputDecoration(
+                labelText: 'Paddler Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await widget.sessionService.renameSession(
+          file,
+          nameController.text.trim(),
+          paddlerController.text.trim(),
+        );
+        _loadFiles();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Session renamed successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error renaming session: $e')));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,13 +133,42 @@ class _SessionListScreenState extends State<SessionListScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              name,
-                              style: const TextStyle(fontSize: 16),
+                            child: FutureBuilder<Map<String, dynamic>>(
+                              future: widget.sessionService.loadSession(
+                                File(f.path),
+                              ),
+                              builder: (context, snapshot) {
+                                final paddlerName =
+                                    snapshot.data?['paddlerName'] as String? ??
+                                    '';
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    if (paddlerName.isNotEmpty)
+                                      Text(
+                                        paddlerName,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.share),
+                            icon: const Icon(Icons.edit),
+                            onPressed: () async {
+                              await _showRenameDialog(File(f.path), name);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.download),
                             onPressed: () async {
                               final csv = await widget.sessionService
                                   .exportSessionCsv(File(f.path));
