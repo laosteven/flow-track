@@ -1,5 +1,29 @@
 # Flow Track Documentation
 
+Welcome to the Flow Track documentation! This folder contains detailed technical documentation for developers and advanced users.
+
+## 📖 Documentation Index
+
+### Getting Started
+- **[Main README](../README.md)** - Project overview and quick start
+- **[Getting Started Guide](../GETTING_STARTED.md)** - Detailed setup and installation instructions
+
+### Technical Documentation
+- **[Architecture](ARCHITECTURE.md)** - System architecture and technical design
+- **[Features](FEATURES.md)** - Comprehensive feature documentation and specifications
+- **[Testing Guide](TESTING.md)** - Testing procedures and validation
+- **[Versioning](VERSIONING.md)** - Version management and release process
+
+### Project Information
+- **[Changelog](../CHANGELOG.md)** - Version history and release notes
+- **[Hardware README](../hardware/README.md)** - Hardware designs and mounting instructions
+
+## 📚 Original User Guide
+
+Below is the original user-focused documentation for understanding metrics and usage.
+
+---
+
 ## Table of Contents
 
 1. [Quick Start Guide](#quick-start-guide)

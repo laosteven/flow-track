@@ -7,9 +7,7 @@ This guide will walk you through setting up your Flow Track from scratch.
 ### Hardware
 - [ ] Arduino Nano 33 BLE Sense Rev2
 - [ ] USB-C cable for programming
-- [ ] Velcro straps (2-3 pieces, 25mm wide)
 - [ ] Optional: 3.7V LiPo battery (500-1000mAh)
-- [ ] Optional: Waterproof case or heat-shrink tubing
 
 ### Software
 - [ ] Computer with Arduino IDE installed

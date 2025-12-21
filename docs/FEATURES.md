@@ -1,6 +1,6 @@
 # Advanced Features Guide
 
-This document describes the advanced features added to Flow Track Pro and how to use them effectively.
+This document describes the advanced features added to Flow Track and how to use them effectively.
 
 ## 📊 Advanced IMU Metrics
 
