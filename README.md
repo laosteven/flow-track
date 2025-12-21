@@ -118,7 +118,7 @@ flutter build ios      # For iOS
 
 1. **Connect to Paddle**
    - Tap the Bluetooth icon in the top-right
-   - App will scan for "FlowTrackPro" devices
+   - App will scan for "FlowTrack" devices
    - Tap "Connect" on your device
 
 2. **Start Paddling**

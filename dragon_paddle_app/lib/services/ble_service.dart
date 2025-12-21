@@ -252,8 +252,8 @@ class BleService {
         (device) {
           final name = device.name;
           final lname = name.toLowerCase();
-          // Match FlowTrack, DragonPaddle (legacy), or any device advertising IMU
-          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('flowtrackpro') || lname.contains('dragonpaddle') || lname.contains('dragonpaddleimu') || lname.contains('imu')) {
+          // Match FlowTrack or any device advertising IMU
+          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('imu')) {
             _scanResultsController.add(device);
           }
         },

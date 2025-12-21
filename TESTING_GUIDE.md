@@ -61,7 +61,7 @@ Initializing Temperature Sensor...
 ✓ Temperature sensor initialized
 Initializing BLE...
 ✓ BLE initialized
-✓ BLE advertising as 'FlowTrackPro'
+✓ BLE advertising as 'FlowTrack'
 ========================================
 Features enabled:
   • Stroke length & timing
@@ -122,7 +122,7 @@ flutter run
 3. Wait for devices to appear
 
 **Expected Result:**
-- Should find "FlowTrackPro" device
+- Should find "FlowTrack" device
 - Device appears in list with Bluetooth icon
 
 ### 4. Test Connection
@@ -131,7 +131,7 @@ flutter run
 2. Wait for connection
 
 **Expected Result:**
-- Green banner appears: "Connected to FlowTrackPro"
+- Green banner appears: "Connected to FlowTrack"
 - Home screen shows all metric cards
 - Serial monitor shows: "✓ Connected to: [MAC address]"
 
@@ -328,7 +328,7 @@ Your implementation is working correctly if:
 
 - [x] Firmware compiles and uploads without errors
 - [x] All sensors initialize successfully
-- [x] BLE advertises as "FlowTrackPro"
+- [x] BLE advertises as "FlowTrack"
 - [x] App connects and shows all cards
 - [x] Basic metrics update in real-time
 - [x] Advanced metrics respond to motion
