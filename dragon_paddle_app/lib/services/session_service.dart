@@ -240,4 +240,15 @@ class SessionService {
       await file.delete();
     }
   }
+
+  Future<void> updatePaddlerName(File file, String paddlerName) async {
+    // Load existing session
+    final map = await loadSession(file);
+
+    // Update paddler name only
+    map['paddlerName'] = paddlerName;
+
+    // Save back to the same file
+    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(map));
+  }
 }

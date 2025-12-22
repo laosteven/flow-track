@@ -34,6 +34,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   List<double> _consistencySeries = [];
   List<double> _avgPowerSeries = [];
   final ScreenshotController _screenshotController = ScreenshotController();
+  String _magnitudeChartType = 'line'; // 'line', 'step'
 
   @override
   void initState() {
@@ -161,6 +162,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                   case 'report':
                     await _generateReport();
                     break;
+                  case 'rename':
+                    await _renameSession();
+                    break;
                   case 'delete':
                     final confirm = await showDialog<bool>(
                       context: context,
@@ -198,6 +202,16 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                       Icon(Icons.download),
                       SizedBox(width: 12),
                       Text('Export CSV'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'rename',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 12),
+                      Text('Rename'),
                     ],
                   ),
                 ),
@@ -450,6 +464,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     List<double> values, {
     Color color = Colors.blue,
   }) {
+    final isMagnitude = title == 'Magnitude';
+    final chartType = isMagnitude ? _magnitudeChartType : 'line';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -464,6 +481,25 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
+                if (isMagnitude) ...[
+                  PopupMenuButton<String>(
+                    initialValue: _magnitudeChartType,
+                    onSelected: (value) {
+                      setState(() => _magnitudeChartType = value);
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'line',
+                        child: Text('Line chart'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'step',
+                        child: Text('Step chart'),
+                      ),
+                    ],
+                    child: const Icon(Icons.bar_chart, size: 20),
+                  ),
+                ],
                 IconButton(
                   icon: const Icon(Icons.open_in_full),
                   onPressed: () => _openFullscreenChart(title, values, color),
@@ -480,39 +516,92 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     )
-                  : LineChart(
-                      LineChartData(
-                        lineTouchData: const LineTouchData(enabled: true),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: List.generate(
-                              values.length,
-                              (i) => FlSpot(i.toDouble(), values[i]),
-                            ),
-                            isCurved: true,
-                            curveSmoothness: 0.2,
-                            color: color,
-                            barWidth: 2,
-                            dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              gradient: LinearGradient(
-                                colors: [
-                                  color.withOpacity(0.25),
-                                  color.withOpacity(0.05),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        gridData: FlGridData(show: true),
-                        titlesData: FlTitlesData(show: false),
-                        borderData: FlBorderData(show: false),
-                      ),
-                    ),
+                  : _buildChart(values, color, chartType),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildChart(List<double> values, Color color, String chartType) {
+    // Downsample data for smoother visualization (use every 5th point)
+    final downsampledValues = _downsampleData(values, 5);
+
+    switch (chartType) {
+      case 'step':
+        return _buildStepChart(downsampledValues, color);
+      case 'line':
+      default:
+        return _buildLineChart(downsampledValues, color);
+    }
+  }
+
+  List<double> _downsampleData(List<double> data, int factor) {
+    if (data.length <= factor * 2) return data;
+    final result = <double>[];
+    for (int i = 0; i < data.length; i += factor) {
+      result.add(data[i]);
+    }
+    return result;
+  }
+
+  Widget _buildLineChart(List<double> values, Color color) {
+    return LineChart(
+      LineChartData(
+        lineTouchData: const LineTouchData(enabled: true),
+        lineBarsData: [
+          LineChartBarData(
+            spots: List.generate(
+              values.length,
+              (i) => FlSpot(i.toDouble(), values[i]),
+            ),
+            isCurved: true,
+            curveSmoothness: 0.35,
+            color: color,
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [color.withOpacity(0.25), color.withOpacity(0.05)],
+              ),
+            ),
+          ),
+        ],
+        gridData: FlGridData(show: true),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+      ),
+    );
+  }
+
+  Widget _buildStepChart(List<double> values, Color color) {
+    return LineChart(
+      LineChartData(
+        lineTouchData: const LineTouchData(enabled: true),
+        lineBarsData: [
+          LineChartBarData(
+            spots: List.generate(
+              values.length,
+              (i) => FlSpot(i.toDouble(), values[i]),
+            ),
+            isCurved: false,
+            isStepLineChart: true,
+            color: color,
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [color.withOpacity(0.25), color.withOpacity(0.05)],
+              ),
+            ),
+          ),
+        ],
+        gridData: FlGridData(show: true),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
       ),
     );
   }
@@ -581,6 +670,50 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             DeviceOrientation.portraitDown,
           ]);
         });
+  }
+
+  Future<void> _renameSession() async {
+    final paddlerName = _data?['paddlerName'] as String? ?? '';
+    final controller = TextEditingController(text: paddlerName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Session'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Paddler Name',
+            hintText: 'Enter paddler name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && newName != paddlerName) {
+      // Update the data map
+      _data?['paddlerName'] = newName;
+      // Save back to file
+      await widget.sessionService.updatePaddlerName(widget.file, newName);
+      setState(() {});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session renamed successfully')),
+        );
+      }
+    }
   }
 
   Future<void> _generateReport() async {

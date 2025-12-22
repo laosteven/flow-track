@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadAppVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
     setState(() {
-      _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+      _appVersion = packageInfo.version;
     });
   }
 
