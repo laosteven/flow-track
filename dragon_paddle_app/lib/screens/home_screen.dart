@@ -38,6 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
   double _consistency = 100.0;
   int _totalStrokes = 0;
   double _averagePower = 0.0;
+  double _distance = 0.0;
+  double _speed = 0.0;
+  double _split500m = 0.0;
 
   List<AccelerometerData> _recentData = [];
 
@@ -114,6 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _consistency = _strokeAnalyzer.getConsistency();
         _totalStrokes = _strokeAnalyzer.getTotalStrokes();
         _averagePower = _strokeAnalyzer.getAveragePower();
+        _distance = _strokeAnalyzer.getDistance();
+        _speed = _strokeAnalyzer.getSpeed();
+        _split500m = _strokeAnalyzer.getSplit500m();
         _recentData = _strokeAnalyzer.getRecentHistory(count: 100);
       });
 
@@ -193,6 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _consistency = 100.0;
       _totalStrokes = 0;
       _averagePower = 0.0;
+      _distance = 0.0;
+      _speed = 0.0;
+      _split500m = 0.0;
       _recentData = [];
       _trajectoryPoints = [];
     });
@@ -500,6 +509,44 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+
+              // New metrics row: Distance and Speed
+              Row(
+                children: [
+                  Expanded(
+                    child: StatsCard(
+                      title: 'Distance',
+                      value: '${_distance.toStringAsFixed(0)}m',
+                      icon: Icons.straighten,
+                      color: Colors.green,
+                      compact: compact,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: StatsCard(
+                      title: 'Speed',
+                      value: '${_speed.toStringAsFixed(2)} m/s',
+                      icon: Icons.speed_outlined,
+                      color: Colors.purple,
+                      compact: compact,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Split/500m metric
+              StatsCard(
+                title: 'Split (500m pace)',
+                value: _split500m > 0
+                    ? '${_split500m.floor()}:${((_split500m % 1) * 60).round().toString().padLeft(2, '0')} min'
+                    : '—',
+                icon: Icons.timer,
+                color: Colors.teal,
+                compact: compact,
               ),
               const SizedBox(height: 12),
 

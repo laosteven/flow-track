@@ -33,6 +33,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   List<double> _spmSeries = [];
   List<double> _consistencySeries = [];
   List<double> _avgPowerSeries = [];
+  List<double> _distanceSeries = [];
+  List<double> _speedSeries = [];
+  List<double> _split500mSeries = [];
   final ScreenshotController _screenshotController = ScreenshotController();
   String _magnitudeChartType = 'line'; // 'line', 'step'
 
@@ -113,14 +116,23 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       _spmSeries = [];
       _consistencySeries = [];
       _avgPowerSeries = [];
+      _distanceSeries = [];
+      _speedSeries = [];
+      _split500mSeries = [];
       for (final m in metrics) {
         try {
-          final spm = (m['spm'] as num).toDouble();
-          final cons = (m['consistency'] as num).toDouble();
-          final ap = (m['avgPower'] as num).toDouble();
+          final spm = (m['spm'] as num?)?.toDouble() ?? 0.0;
+          final cons = (m['consistency'] as num?)?.toDouble() ?? 0.0;
+          final ap = (m['avgPower'] as num?)?.toDouble() ?? 0.0;
+          final dist = (m['distance'] as num?)?.toDouble() ?? 0.0;
+          final spd = (m['speed'] as num?)?.toDouble() ?? 0.0;
+          final split = (m['split500m'] as num?)?.toDouble() ?? 0.0;
           _spmSeries.add(spm);
           _consistencySeries.add(cons);
           _avgPowerSeries.add(ap);
+          _distanceSeries.add(dist);
+          _speedSeries.add(spd);
+          _split500mSeries.add(split);
         } catch (_) {}
       }
     }
@@ -130,6 +142,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final distance = _analyzer.getDistance();
+    final speed = _analyzer.getSpeed();
+    final split500m = _analyzer.getSplit500m();
     final title = widget.file.path.split(Platform.pathSeparator).last;
     final paddlerName = _data?['paddlerName'] as String? ?? '';
     final displayTitle = paddlerName.isNotEmpty
@@ -274,7 +289,11 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                                 const SizedBox(height: 6),
                                 Text(
                                   strokeRate.toStringAsFixed(1),
-                                  style: Theme.of(context).textTheme.titleLarge,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.deepPurple,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
@@ -305,7 +324,11 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                                 const SizedBox(height: 6),
                                 Text(
                                   '${consistency.toStringAsFixed(1)}%',
-                                  style: Theme.of(context).textTheme.titleLarge,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
@@ -332,13 +355,17 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Total Strokes',
+                                  'Total strokes',
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
                                   total.toString(),
-                                  style: Theme.of(context).textTheme.titleLarge,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
@@ -363,13 +390,17 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Average Power',
+                                  'Average power',
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
                                   avgPower.toStringAsFixed(2),
-                                  style: Theme.of(context).textTheme.titleLarge,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 const Spacer(),
@@ -380,6 +411,113 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                                         ? _avgPowerSeries
                                         : _magnitudes,
                                     color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Distance',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${distance.toStringAsFixed(0)} m',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Spacer(),
+                                SizedBox(
+                                  height: 40,
+                                  child: _miniChart(
+                                    _distanceSeries.isNotEmpty
+                                        ? _distanceSeries
+                                        : _magnitudes,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Speed',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${speed.toStringAsFixed(2)} m/s',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Spacer(),
+                                SizedBox(
+                                  height: 40,
+                                  child: _miniChart(
+                                    _speedSeries.isNotEmpty
+                                        ? _speedSeries
+                                        : _magnitudes,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Split (500m)',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  split500m > 0
+                                      ? '${split500m.floor()}:${((split500m % 1) * 60).round().toString().padLeft(2, '0')}'
+                                      : '—',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Spacer(),
+                                SizedBox(
+                                  height: 40,
+                                  child: _miniChart(
+                                    _split500mSeries.isNotEmpty
+                                        ? _split500mSeries
+                                        : _magnitudes,
+                                    color: Colors.red,
                                   ),
                                 ),
                               ],
@@ -735,6 +873,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       final consistency = _analyzer.getConsistency();
       final total = _analyzer.getTotalStrokes();
       final avgPower = _analyzer.getAveragePower();
+      final distance = _analyzer.getDistance();
+      final speed = _analyzer.getSpeed();
+      final split500m = _analyzer.getSplit500m();
 
       // Parse filename to extract date/time (format: 2025-12-21_01-58-40.json)
       String formattedDate = title;
@@ -792,10 +933,16 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               consistency: consistency,
               totalStrokes: total,
               avgPower: avgPower,
+              distance: distance,
+              speed: speed,
+              split500m: split500m,
               magnitudes: _magnitudes,
               spmSeries: _spmSeries,
               consistencySeries: _consistencySeries,
               avgPowerSeries: _avgPowerSeries,
+              distanceSeries: _distanceSeries,
+              speedSeries: _speedSeries,
+              split500mSeries: _split500mSeries,
             ),
           ),
         );
@@ -819,10 +966,16 @@ class _ReportCaptureScreen extends StatefulWidget {
   final double consistency;
   final int totalStrokes;
   final double avgPower;
+  final double distance;
+  final double speed;
+  final double split500m;
   final List<double> magnitudes;
   final List<double> spmSeries;
   final List<double> consistencySeries;
   final List<double> avgPowerSeries;
+  final List<double> distanceSeries;
+  final List<double> speedSeries;
+  final List<double> split500mSeries;
 
   const _ReportCaptureScreen({
     required this.screenshotController,
@@ -832,10 +985,16 @@ class _ReportCaptureScreen extends StatefulWidget {
     required this.consistency,
     required this.totalStrokes,
     required this.avgPower,
+    required this.distance,
+    required this.speed,
+    required this.split500m,
     required this.magnitudes,
     required this.spmSeries,
     required this.consistencySeries,
     required this.avgPowerSeries,
+    required this.distanceSeries,
+    required this.speedSeries,
+    required this.split500mSeries,
   });
 
   @override
@@ -903,10 +1062,16 @@ class _ReportCaptureScreenState extends State<_ReportCaptureScreen> {
           consistency: widget.consistency,
           totalStrokes: widget.totalStrokes,
           avgPower: widget.avgPower,
+          distance: widget.distance,
+          speed: widget.speed,
+          split500m: widget.split500m,
           magnitudes: widget.magnitudes,
           spmSeries: widget.spmSeries,
           consistencySeries: widget.consistencySeries,
           avgPowerSeries: widget.avgPowerSeries,
+          distanceSeries: widget.distanceSeries,
+          speedSeries: widget.speedSeries,
+          split500mSeries: widget.split500mSeries,
         ),
       ),
     );

@@ -52,11 +52,17 @@ class SessionService {
           final spm = analyzer.getStrokeRate();
           final consistency = analyzer.getConsistency();
           final avgPower = analyzer.getAveragePower();
+          final distance = analyzer.getDistance();
+          final speed = analyzer.getSpeed();
+          final split500m = analyzer.getSplit500m();
           _metrics.add({
             't': now,
             'spm': spm,
             'consistency': consistency,
             'avgPower': avgPower,
+            'distance': distance,
+            'speed': speed,
+            'split500m': split500m,
           });
         } catch (_) {}
       });

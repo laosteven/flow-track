@@ -11,10 +11,16 @@ class SessionReportWidget extends StatelessWidget {
   final double consistency;
   final int totalStrokes;
   final double avgPower;
+  final double distance;
+  final double speed;
+  final double split500m;
   final List<double> magnitudes;
   final List<double> spmSeries;
   final List<double> consistencySeries;
   final List<double> avgPowerSeries;
+  final List<double> distanceSeries;
+  final List<double> speedSeries;
+  final List<double> split500mSeries;
 
   const SessionReportWidget({
     super.key,
@@ -24,10 +30,16 @@ class SessionReportWidget extends StatelessWidget {
     required this.consistency,
     required this.totalStrokes,
     required this.avgPower,
+    required this.distance,
+    required this.speed,
+    required this.split500m,
     required this.magnitudes,
     required this.spmSeries,
     required this.consistencySeries,
     required this.avgPowerSeries,
+    required this.distanceSeries,
+    required this.speedSeries,
+    required this.split500mSeries,
   });
 
   @override
@@ -46,7 +58,7 @@ class SessionReportWidget extends StatelessWidget {
               Text(
                 paddlerName,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue[900],
                 ),
@@ -57,9 +69,9 @@ class SessionReportWidget extends StatelessWidget {
               sessionName,
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             Divider(thickness: 1, color: Colors.grey[300]),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
 
             // Stats Grid
             Expanded(
@@ -97,7 +109,7 @@ class SessionReportWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Expanded(
                     child: Row(
                       children: [
@@ -105,11 +117,11 @@ class SessionReportWidget extends StatelessWidget {
                           child: _buildStatCard(
                             'Total strokes',
                             totalStrokes.toString(),
-                            _buildMiniBarChart(magnitudes, Colors.blue),
+                            _buildMiniChart(magnitudes, Colors.blue),
                             Colors.blue,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: _buildStatCard(
                             'Average power',
@@ -126,177 +138,68 @@ class SessionReportWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Main Chart
-            Expanded(
-              flex: 4,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Stroke magnitude',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'Distance',
+                            '${distance.toStringAsFixed(0)} m',
+                            _buildMiniChart(
+                              distanceSeries.isNotEmpty
+                                  ? distanceSeries
+                                  : magnitudes,
+                              Colors.green,
+                            ),
+                            Colors.green,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Speed',
+                            '${speed.toStringAsFixed(2)} m/s',
+                            _buildMiniChart(
+                              speedSeries.isNotEmpty ? speedSeries : magnitudes,
+                              Colors.purple,
+                            ),
+                            Colors.purple,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child: magnitudes.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No data available',
-                              style: TextStyle(
-                                fontSize: 24,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          )
-                        : Builder(
-                            builder: (context) {
-                              // Extract peaks (local maxima)
-                              final peakSpots = <FlSpot>[];
-                              for (int i = 0; i < magnitudes.length; i++) {
-                                if (i == 0 || i == magnitudes.length - 1) {
-                                  // Include first and last points
-                                  if (magnitudes[i] >= 1.0) {
-                                    // Transform: subtract 1.0 to make peaks start from 0 and go up
-                                    peakSpots.add(
-                                      FlSpot(i.toDouble(), magnitudes[i] - 1.0),
-                                    );
-                                  }
-                                } else if (magnitudes[i] > magnitudes[i - 1] &&
-                                    magnitudes[i] > magnitudes[i + 1]) {
-                                  // Local maximum
-                                  if (magnitudes[i] >= 1.0) {
-                                    // Transform: subtract 1.0 to make peaks start from 0 and go up
-                                    peakSpots.add(
-                                      FlSpot(i.toDouble(), magnitudes[i] - 1.0),
-                                    );
-                                  }
-                                }
-                              }
-
-                              // Extract troughs (local minima)
-                              final troughSpots = <FlSpot>[];
-                              for (int i = 0; i < magnitudes.length; i++) {
-                                if (i == 0 || i == magnitudes.length - 1) {
-                                  // Include first and last points
-                                  if (magnitudes[i] < 1.0) {
-                                    // Transform: subtract from 1.0 to make troughs negative (below 0)
-                                    troughSpots.add(
-                                      FlSpot(i.toDouble(), magnitudes[i] - 1.0),
-                                    );
-                                  }
-                                } else if (magnitudes[i] < magnitudes[i - 1] &&
-                                    magnitudes[i] < magnitudes[i + 1]) {
-                                  // Local minimum
-                                  if (magnitudes[i] < 1.0) {
-                                    // Transform: subtract from 1.0 to make troughs negative (below 0)
-                                    troughSpots.add(
-                                      FlSpot(i.toDouble(), magnitudes[i] - 1.0),
-                                    );
-                                  }
-                                }
-                              }
-
-                              // Calculate min and max for padding
-                              final allValues = [
-                                ...peakSpots.map((s) => s.y),
-                                ...troughSpots.map((s) => s.y),
-                              ];
-                              final minY = allValues.isEmpty
-                                  ? 0.0
-                                  : allValues.reduce((a, b) => a < b ? a : b);
-                              final maxY = allValues.isEmpty
-                                  ? 2.0
-                                  : allValues.reduce((a, b) => a > b ? a : b);
-                              final padding =
-                                  (maxY - minY) * 0.15; // 15% padding
-
-                              return LineChart(
-                                LineChartData(
-                                  minY: minY - padding,
-                                  maxY: maxY + padding,
-                                  lineBarsData: [
-                                    // Peaks line - upper boundary (above 0)
-                                    if (peakSpots.isNotEmpty)
-                                      LineChartBarData(
-                                        spots: peakSpots,
-                                        isCurved: false,
-                                        isStepLineChart: true,
-                                        color: Colors.blue,
-                                        barWidth: 1.5,
-                                        dotData: const FlDotData(show: false),
-                                        belowBarData: BarAreaData(
-                                          show: true,
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.center,
-                                            colors: [
-                                              Colors.blue.withValues(alpha: 0.3),
-                                              Colors.blue.withValues(alpha: 0),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    // Troughs line - lower boundary (below 0)
-                                    if (troughSpots.isNotEmpty)
-                                      LineChartBarData(
-                                        spots: troughSpots,
-                                        isCurved: false,
-                                        isStepLineChart: true,
-                                        color: Colors.orange,
-                                        barWidth: 1.5,
-                                        dotData: const FlDotData(show: false),
-                                        aboveBarData: BarAreaData(
-                                          show: true,
-                                          gradient: LinearGradient(
-                                            begin: Alignment.bottomCenter,
-                                            end: Alignment.center,
-                                            colors: [
-                                              Colors.orange.withValues(alpha: 0.3),
-                                              Colors.orange.withValues(alpha: 0),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                  gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: false,
-                                    getDrawingHorizontalLine: (value) {
-                                      return FlLine(
-                                        color: Colors.grey[300]!,
-                                        strokeWidth: 1,
-                                      );
-                                    },
-                                  ),
-                                  titlesData: FlTitlesData(show: false),
-                                  borderData: FlBorderData(
-                                    show: true,
-                                    border: Border.all(
-                                      color: Colors.grey[400]!,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  lineTouchData: LineTouchData(enabled: false),
-                                ),
-                              );
-                            },
-                          ),
+                    child: _buildStatCard(
+                      'Split (500m)',
+                      split500m > 0
+                          ? '${split500m.floor()}:${((split500m % 1) * 60).round().toString().padLeft(2, '0')}'
+                          : '—',
+                      _buildMiniChart(
+                        split500mSeries.isNotEmpty
+                            ? split500mSeries
+                            : magnitudes,
+                        Colors.red,
+                      ),
+                      Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      'Stroke magnitude',
+                      '',
+                      _buildMiniBarChart(magnitudes, Colors.indigo),
+                      Colors.indigo,
+                    ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 4),
 
             // Footer
             Center(
@@ -342,17 +245,23 @@ class SessionReportWidget extends StatelessWidget {
               color: Colors.grey[700],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
+          if (value.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
-          ),
-          const Spacer(),
-          SizedBox(height: 50, child: chart),
+            const Spacer(),
+            SizedBox(height: 50, child: chart),
+          ],
+          if (value.isEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(height: 80, child: chart),
+          ],
         ],
       ),
     );
@@ -379,7 +288,10 @@ class SessionReportWidget extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.05)],
+                colors: [
+                  color.withValues(alpha: 0.25),
+                  color.withValues(alpha: 0.05),
+                ],
               ),
             ),
           ),
