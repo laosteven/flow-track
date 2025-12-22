@@ -166,13 +166,13 @@ class TrajectoryPainter extends CustomPainter {
     }
 
     // Draw connecting lines
-    paint.color = Colors.grey.withOpacity(0.5);
+    paint.color = Colors.grey.withValues(alpha: 0.5);
     paint.strokeWidth = 1.0;
     canvas.drawPath(path, paint);
 
     // Draw center cross
     final centerPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.3)
+      ..color = Colors.grey.withValues(alpha: 0.3)
       ..strokeWidth = 1.0;
     canvas.drawLine(
       Offset(size.width / 2, 0),

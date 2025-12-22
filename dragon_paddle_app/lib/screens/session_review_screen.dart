@@ -27,8 +27,8 @@ class SessionReviewScreen extends StatefulWidget {
 class _SessionReviewScreenState extends State<SessionReviewScreen> {
   Map<String, dynamic>? _data;
   final StrokeAnalyzer _analyzer = StrokeAnalyzer();
-  List<double> _magnitudes = [];
-  List<int> _strokeIndices = [];
+  final List<double> _magnitudes = [];
+  final List<int> _strokeIndices = [];
   List<double> _strokeMagnitudes = [];
   List<double> _spmSeries = [];
   List<double> _consistencySeries = [];
@@ -150,11 +150,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               onSelected: (value) async {
                 switch (value) {
                   case 'export':
+                    final messenger = ScaffoldMessenger.of(context);
                     final csv = await widget.sessionService.exportSessionCsv(
                       widget.file,
                     );
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(content: Text('Exported CSV: $csv')),
                       );
                     }
@@ -188,6 +189,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                     if (confirm == true) {
                       await widget.sessionService.deleteSession(widget.file);
                       if (mounted) {
+                        // ignore: use_build_context_synchronously
                         Navigator.of(context).pop();
                       }
                     }
@@ -441,13 +443,16 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: color.withOpacity(0.9),
+            color: color.withValues(alpha: 0.9),
             barWidth: 1.4,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.18), color.withOpacity(0.04)],
+                colors: [
+                  color.withValues(alpha: 0.18),
+                  color.withValues(alpha: 0.04),
+                ],
               ),
             ),
           ),
@@ -564,7 +569,10 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.25), color.withOpacity(0.05)],
+                colors: [
+                  color.withValues(alpha: 0.25),
+                  color.withValues(alpha: 0.05),
+                ],
               ),
             ),
           ),
@@ -594,7 +602,10 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.25), color.withOpacity(0.05)],
+                colors: [
+                  color.withValues(alpha: 0.25),
+                  color.withValues(alpha: 0.05),
+                ],
               ),
             ),
           ),
@@ -647,8 +658,8 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                                 show: true,
                                 gradient: LinearGradient(
                                   colors: [
-                                    color.withOpacity(0.25),
-                                    color.withOpacity(0.05),
+                                    color.withValues(alpha: 0.25),
+                                    color.withValues(alpha: 0.05),
                                   ],
                                 ),
                               ),

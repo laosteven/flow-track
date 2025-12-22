@@ -38,6 +38,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
     );
     final paddlerController = TextEditingController(text: currentPaddlerName);
 
+    if (!mounted) return;
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -168,10 +169,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
                                   await _showRenameDialog(File(f.path), name);
                                   break;
                                 case 'export':
+                                  final messenger = ScaffoldMessenger.of(context);
                                   final csv = await widget.sessionService
                                       .exportSessionCsv(File(f.path));
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(content: Text('Exported: $csv')),
                                     );
                                   }

@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showConnectionBanner = false;
   String _appVersion = '';
 
-  List<DiscoveredDevice> _discoveredDevices = [];
+  final List<DiscoveredDevice> _discoveredDevices = [];
 
   double _strokeRate = 0.0;
   double _consistency = 100.0;
@@ -203,18 +203,24 @@ class _HomeScreenState extends State<HomeScreen> {
       _sessionService.stop();
       // auto-save session
       final path = await _sessionService.saveSession();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Session saved: $path')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Session saved: $path')));
+      }
     } else {
       // Reset stats to match device
       _strokeAnalyzer.reset();
       await _sessionService.startWithAnalyzer(_strokeAnalyzer);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Recording started')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Recording started')));
+      }
     }
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _openSessions() async {

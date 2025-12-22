@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import '../models/sensor_data.dart';
@@ -58,13 +58,17 @@ class BleService {
   Future<void> startScan() async {
     if (kIsWeb) {
       // flutter_reactive_ble is not supported on web; avoid calling platform APIs.
-      print('startScan skipped: BLE not supported on web');
+      if (kDebugMode) {
+        debugPrint('startScan skipped: BLE not supported on web');
+      }
       return;
     }
 
     final granted = await _ensurePermissions();
     if (!granted) {
-      print('startScan aborted: required permissions not granted');
+      if (kDebugMode) {
+        debugPrint('startScan aborted: required permissions not granted');
+      }
       return;
     }
 
@@ -96,7 +100,9 @@ class BleService {
         }
       },
       onError: (error) {
-        print('Connection error: $error');
+        if (kDebugMode) {
+          debugPrint('Connection error: $error');
+        }
         _connectedDeviceId = null;
       },
     );
@@ -145,7 +151,9 @@ class BleService {
         }
       },
       onError: (error) {
-        print('Accelerometer subscription error: $error');
+        if (kDebugMode) {
+          debugPrint('Accelerometer subscription error: $error');
+        }
       },
     );
     
@@ -157,7 +165,9 @@ class BleService {
         }
       },
       onError: (error) {
-        print('Gyroscope subscription error: $error');
+        if (kDebugMode) {
+          debugPrint('Gyroscope subscription error: $error');
+        }
       },
     );
     
@@ -169,7 +179,9 @@ class BleService {
         }
       },
       onError: (error) {
-        print('Magnetometer subscription error: $error');
+        if (kDebugMode) {
+          debugPrint('Magnetometer subscription error: $error');
+        }
       },
     );
     
@@ -184,7 +196,9 @@ class BleService {
         }
       },
       onError: (error) {
-        print('Metrics subscription error: $error');
+        if (kDebugMode) {
+          debugPrint('Metrics subscription error: $error');
+        }
       },
     );
     
@@ -196,7 +210,9 @@ class BleService {
         }
       },
       onError: (error) {
-        print('Temperature subscription error: $error');
+        if (kDebugMode) {
+          debugPrint('Temperature subscription error: $error');
+        }
       },
     );
   }
@@ -237,7 +253,9 @@ class BleService {
       bool granted = statuses.values.any((s) => s.isGranted);
       return granted;
     } catch (e) {
-      print('Permission request failed: $e');
+      if (kDebugMode) {
+        debugPrint('Permission request failed: $e');
+      }
       return false;
     }
   }
@@ -258,12 +276,16 @@ class BleService {
           }
         },
         onError: (error) {
-          print('Scan error: $error');
+          if (kDebugMode) {
+            debugPrint('Scan error: $error');
+          }
         },
       );
     } catch (e) {
       // Guard against platform / unsupported operation errors (e.g., Platform._operatingSystem)
-      print('Failed to start BLE scan: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to start BLE scan: $e');
+      }
     }
   }
   

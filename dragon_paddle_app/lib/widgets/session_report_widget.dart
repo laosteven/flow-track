@@ -240,8 +240,8 @@ class SessionReportWidget extends StatelessWidget {
                                             begin: Alignment.topCenter,
                                             end: Alignment.center,
                                             colors: [
-                                              Colors.blue.withOpacity(0.3),
-                                              Colors.blue.withOpacity(0),
+                                              Colors.blue.withValues(alpha: 0.3),
+                                              Colors.blue.withValues(alpha: 0),
                                             ],
                                           ),
                                         ),
@@ -261,8 +261,8 @@ class SessionReportWidget extends StatelessWidget {
                                             begin: Alignment.bottomCenter,
                                             end: Alignment.center,
                                             colors: [
-                                              Colors.orange.withOpacity(0.3),
-                                              Colors.orange.withOpacity(0),
+                                              Colors.orange.withValues(alpha: 0.3),
+                                              Colors.orange.withValues(alpha: 0),
                                             ],
                                           ),
                                         ),
@@ -379,7 +379,7 @@ class SessionReportWidget extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [color.withOpacity(0.25), color.withOpacity(0.05)],
+                colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.05)],
               ),
             ),
           ),
@@ -465,8 +465,8 @@ class SessionReportWidget extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.center,
                   colors: [
-                    Colors.blue.withOpacity(0.3),
-                    Colors.blue.withOpacity(0),
+                    Colors.blue.withValues(alpha: 0.3),
+                    Colors.blue.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -486,8 +486,8 @@ class SessionReportWidget extends StatelessWidget {
                   begin: Alignment.bottomCenter,
                   end: Alignment.center,
                   colors: [
-                    Colors.orange.withOpacity(0.3),
-                    Colors.orange.withOpacity(0),
+                    Colors.orange.withValues(alpha: 0.3),
+                    Colors.orange.withValues(alpha: 0),
                   ],
                 ),
               ),
