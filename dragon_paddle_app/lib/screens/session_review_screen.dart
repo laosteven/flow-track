@@ -690,6 +690,18 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   }
 
   Widget _buildLineChart(List<double> values, Color color) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Find max and min indices
+    int maxIndex = 0;
+    int minIndex = 0;
+    for (int i = 1; i < values.length; i++) {
+      if (values[i] > values[maxIndex]) maxIndex = i;
+      if (values[i] < values[minIndex]) minIndex = i;
+    }
+    
     return LineChart(
       LineChartData(
         lineTouchData: const LineTouchData(enabled: true),
@@ -703,7 +715,22 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             curveSmoothness: 0.35,
             color: color,
             barWidth: 2,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(
+              show: true,
+              checkToShowDot: (spot, barData) {
+                // Only show dots for max and min points
+                return spot.x == maxIndex.toDouble() || spot.x == minIndex.toDouble();
+              },
+              getDotPainter: (spot, percent, barData, index) {
+                final isMax = spot.x == maxIndex.toDouble();
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: isMax ? Colors.green : Colors.red,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
@@ -723,6 +750,18 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   }
 
   Widget _buildStepChart(List<double> values, Color color) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Find max and min indices
+    int maxIndex = 0;
+    int minIndex = 0;
+    for (int i = 1; i < values.length; i++) {
+      if (values[i] > values[maxIndex]) maxIndex = i;
+      if (values[i] < values[minIndex]) minIndex = i;
+    }
+    
     return LineChart(
       LineChartData(
         lineTouchData: const LineTouchData(enabled: true),
@@ -736,7 +775,22 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             isStepLineChart: true,
             color: color,
             barWidth: 2,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(
+              show: true,
+              checkToShowDot: (spot, barData) {
+                // Only show dots for max and min points
+                return spot.x == maxIndex.toDouble() || spot.x == minIndex.toDouble();
+              },
+              getDotPainter: (spot, percent, barData, index) {
+                final isMax = spot.x == maxIndex.toDouble();
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: isMax ? Colors.green : Colors.red,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(

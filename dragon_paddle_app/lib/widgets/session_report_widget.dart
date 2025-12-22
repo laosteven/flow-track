@@ -58,7 +58,7 @@ class SessionReportWidget extends StatelessWidget {
               Text(
                 paddlerName,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue[900],
                 ),
@@ -175,7 +175,7 @@ class SessionReportWidget extends StatelessWidget {
                     child: _buildStatCard(
                       'Split (500m)',
                       split500m > 0
-                          ? '${split500m.floor()}:${((split500m % 1) * 60).round().toString().padLeft(2, '0')}'
+                          ? '${split500m.floor()}:${((split500m % 1) * 60).round().toString().padLeft(2, '0')} min'
                           : '—',
                       _buildMiniChart(
                         split500mSeries.isNotEmpty
@@ -271,6 +271,18 @@ class SessionReportWidget extends StatelessWidget {
     if (values.isEmpty) {
       return const SizedBox.shrink();
     }
+    
+    // Find max and min indices and values
+    int maxIndex = 0;
+    int minIndex = 0;
+    for (int i = 1; i < values.length; i++) {
+      if (values[i] > values[maxIndex]) maxIndex = i;
+      if (values[i] < values[minIndex]) minIndex = i;
+    }
+    
+    final maxValue = values[maxIndex];
+    final minValue = values[minIndex];
+    
     return LineChart(
       LineChartData(
         lineBarsData: [
@@ -282,7 +294,21 @@ class SessionReportWidget extends StatelessWidget {
             isCurved: true,
             color: color,
             barWidth: 1,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(
+              show: true,
+              checkToShowDot: (spot, barData) {
+                // Only show dots for max and min points
+                return spot.x == maxIndex.toDouble() || spot.x == minIndex.toDouble();
+              },
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 2.5,
+                  color: spot.x == maxIndex.toDouble() ? Colors.green : Colors.red,
+                  strokeWidth: 1,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
@@ -299,6 +325,44 @@ class SessionReportWidget extends StatelessWidget {
         gridData: FlGridData(show: false),
         titlesData: FlTitlesData(show: false),
         borderData: FlBorderData(show: false),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            // Max value line
+            HorizontalLine(
+              y: maxValue,
+              color: Colors.transparent,
+              strokeWidth: 0,
+              label: HorizontalLineLabel(
+                show: true,
+                alignment: Alignment.topRight,
+                padding: const EdgeInsets.only(right: 2, bottom: 2),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+                labelResolver: (line) => maxValue.toStringAsFixed(1),
+              ),
+            ),
+            // Min value line
+            HorizontalLine(
+              y: minValue,
+              color: Colors.transparent,
+              strokeWidth: 0,
+              label: HorizontalLineLabel(
+                show: true,
+                alignment: Alignment.bottomRight,
+                padding: const EdgeInsets.only(right: 2, top: 2),
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+                labelResolver: (line) => minValue.toStringAsFixed(1),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
