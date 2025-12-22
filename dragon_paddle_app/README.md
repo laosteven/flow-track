@@ -205,16 +205,6 @@ flutter test
 flutter test test/widget_test.dart
 ```
 
-## Future Enhancements
-
-- [ ] Local data persistence (SQLite/Hive)
-- [ ] Session history and analysis
-- [ ] Export data to CSV/JSON
-- [ ] Multi-device support for team training
-- [ ] 3D trajectory visualization
-- [ ] Customizable metrics dashboard
-- [ ] Dark mode support
-
 ## Contributing
 
 Contributions welcome! Areas for improvement:

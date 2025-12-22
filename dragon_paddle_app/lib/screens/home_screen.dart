@@ -11,9 +11,7 @@ import '../widgets/stroke_rate_card.dart';
 import '../widgets/consistency_indicator.dart';
 import '../widgets/motion_graph.dart';
 import '../widgets/stats_card.dart';
-import '../widgets/advanced_metrics_card.dart';
 import '../widgets/temperature_card.dart';
-import '../widgets/ml_quality_card.dart';
 import '../widgets/trajectory_widget.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -44,7 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<AccelerometerData> _recentData = [];
 
   // Advanced metrics
-  AdvancedMetrics _advancedMetrics = AdvancedMetrics.empty();
   TemperatureData _temperatureData = TemperatureData.empty();
   MagnetometerData? _lastMagData;
 
@@ -133,13 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
 
-    // Listen to advanced metrics
-    _bleService.advancedMetrics.listen((metrics) {
-      setState(() {
-        _advancedMetrics = metrics;
-      });
-    });
-
     // Listen to temperature data
     _bleService.temperatureData.listen((tempData) {
       setState(() {
@@ -205,7 +195,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _averagePower = 0.0;
       _recentData = [];
       _trajectoryPoints = [];
-      _advancedMetrics = AdvancedMetrics.empty();
     });
   }
 
@@ -514,10 +503,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: graphHeight,
               ),
               const SizedBox(height: 12),
-
-              // Advanced metrics
-              // AdvancedMetricsCard(metrics: _advancedMetrics),
-              // const SizedBox(height: 12),
 
               // Temperature monitoring
               TemperatureCard(temperature: _temperatureData),
