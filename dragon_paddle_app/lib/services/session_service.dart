@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/sensor_data.dart';
+import 'settings_service.dart';
 
 class SessionService {
   final List<AccelerometerData> _buffer = [];
@@ -143,6 +144,13 @@ class SessionService {
         '${timestamp.year.toString().padLeft(4, '0')}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}-${timestamp.minute.toString().padLeft(2, '0')}-${timestamp.second.toString().padLeft(2, '0')}';
     final sessionName = name ?? formatted;
 
+    // Get default paddler name from settings if not provided
+    String finalPaddlerName = paddlerName ?? '';
+    if (finalPaddlerName.isEmpty) {
+      final settingsService = SettingsService();
+      finalPaddlerName = await settingsService.getPaddlerName();
+    }
+
     // If a temp file exists, prefer streaming source to build samples without holding everything in memory
     List<Map<String, dynamic>> jsonSamples = [];
     if (_tempFile != null && await _tempFile!.exists()) {
@@ -175,7 +183,7 @@ class SessionService {
 
     final session = {
       'name': sessionName,
-      'paddlerName': paddlerName ?? '',
+      'paddlerName': finalPaddlerName,
       'startedAt': timestamp.toIso8601String(),
       'samples': jsonSamples,
       'strokes': _strokeEvents,

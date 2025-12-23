@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/session_service.dart';
+import '../widgets/app_drawer.dart';
 import 'session_review_screen.dart';
 
 class SessionListScreen extends StatefulWidget {
@@ -15,11 +17,20 @@ class SessionListScreen extends StatefulWidget {
 class _SessionListScreenState extends State<SessionListScreen> {
   List<FileSystemEntity> _recordings = [];
   List<FileSystemEntity> _imported = [];
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _loadFiles();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+    });
   }
 
   void _loadFiles() async {
@@ -119,6 +130,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
               Tab(icon: Icon(Icons.download), text: 'Imported'),
             ],
           ),
+        ),
+        drawer: AppDrawer(
+          appVersion: _appVersion,
+          isConnected: false,
+          sessionService: widget.sessionService,
         ),
         body: TabBarView(
           children: [

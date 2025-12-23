@@ -45,6 +45,7 @@ dependencies:
   package_info_plus: ^9.0.0      # For reading app version from pubspec
   url_launcher: ^6.3.1           # For opening URLs
   app_links: ^6.3.2              # For deep linking support
+  shared_preferences: ^2.3.3     # For storing user settings
 
 dev_dependencies:
   flutter_test:

@@ -14,6 +14,7 @@ import '../widgets/motion_graph.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/temperature_card.dart';
 import '../widgets/trajectory_widget.dart';
+import '../widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -287,81 +288,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-      drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const DrawerHeader(
-                child: Text(
-                  'Flow Track',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.folder_open),
-                title: const Text('Saved sessions'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _openSessions();
-                },
-              ),
-              const Spacer(),
-              ListTile(
-                leading: const Icon(Icons.code),
-                title: const Text('GitHub'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  final uri = Uri.parse('https://github.com/laosteven/flow-track');
-                  try {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Could not open browser: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-              ),
-              if (_isConnected)
-                ListTile(
-                  leading: const Icon(Icons.refresh),
-                  title: const Text('Reset statistics'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _resetStats();
-                  },
-                ),
-              ListTile(
-                leading: Icon(
-                  _isConnected ? Icons.bluetooth_connected : Icons.bluetooth,
-                ),
-                title: Text(_isConnected ? 'Disconnect' : 'Scan'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  if (_isConnected) {
-                    _disconnect();
-                  } else {
-                    _toggleScan();
-                  }
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  _appVersion.isNotEmpty
-                      ? 'App version: $_appVersion'
-                      : 'App version: loading...',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ],
-          ),
-        ),
+      drawer: AppDrawer(
+        appVersion: _appVersion,
+        isConnected: _isConnected,
+        sessionService: _sessionService,
+        onDisconnect: _disconnect,
+        onScan: _toggleScan,
+        onResetStats: _resetStats,
       ),
       body: Stack(
         children: [
