@@ -134,7 +134,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
-      - name: Create Release
+      - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -142,6 +142,5 @@ jobs:
             android-bundle/app-release.aab
             ios-ipa/app-release.ipa
             windows-release/windows-release.zip
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
