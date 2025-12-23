@@ -74,17 +74,24 @@ flutter build ios      # For iOS
    - Consistency bar shows stroke uniformity
    - Motion graph displays real-time acceleration patterns
 
+3. **Share Sessions** 🆕
+   - Review any recorded session
+   - Tap the menu (⋮) → "Share Session"
+   - Send via social media, email, or messaging
+   - Coaches can open the link to automatically import and view the session
+
 ## 🏆 Credits
 
 Built for dragon boat athletes who want to improve their paddling technique through data-driven feedback.
 
-## � Documentation
+## 📚 Documentation
 
 Detailed documentation is available in the [docs/](docs/) folder:
 
 - **[Getting Started Guide](GETTING_STARTED.md)** - Complete setup instructions
 - **[Architecture](docs/ARCHITECTURE.md)** - Technical architecture and design decisions
 - **[Features](docs/FEATURES.md)** - Detailed feature documentation
+- **[Session Sharing](docs/SESSION_SHARING.md)** - How to share sessions with coaches 🆕
 - **[Testing Guide](docs/TESTING.md)** - How to test the system
 - **[Versioning](docs/VERSIONING.md)** - Version management with GitHub Actions
 - **[Changelog](CHANGELOG.md)** - Version history and release notes

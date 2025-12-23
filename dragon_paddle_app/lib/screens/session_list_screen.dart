@@ -13,7 +13,8 @@ class SessionListScreen extends StatefulWidget {
 }
 
 class _SessionListScreenState extends State<SessionListScreen> {
-  List<FileSystemEntity> _files = [];
+  List<FileSystemEntity> _recordings = [];
+  List<FileSystemEntity> _imported = [];
 
   @override
   void initState() {
@@ -22,9 +23,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
   }
 
   void _loadFiles() async {
-    final files = await widget.sessionService.listSessions();
+    final recordings = await widget.sessionService.listRecordings();
+    final imported = await widget.sessionService.listImported();
     setState(() {
-      _files = files;
+      _recordings = recordings;
+      _imported = imported;
     });
   }
 
@@ -33,9 +36,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
     final session = await widget.sessionService.loadSession(file);
     final currentPaddlerName = session['paddlerName'] as String? ?? '';
 
-    final nameController = TextEditingController(
-      text: currentName.replaceAll('.json', ''),
-    );
+    // Remove extension from name
+    String displayName = currentName
+        .replaceAll('.json', '')
+        .replaceAll('.flowtrack', '');
+
+    final nameController = TextEditingController(text: displayName);
     final paddlerController = TextEditingController(text: currentPaddlerName);
 
     if (!mounted) return;
@@ -60,6 +66,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                 labelText: 'Paddler name',
                 border: OutlineInputBorder(),
               ),
+              textCapitalization: TextCapitalization.words,
             ),
           ],
         ),
@@ -101,155 +108,166 @@ class _SessionListScreenState extends State<SessionListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Saved sessions')),
-      body: _files.isEmpty
-          ? const Center(child: Text('No sessions found'))
-          : ListView.builder(
-              itemCount: _files.length,
-              itemBuilder: (context, index) {
-                final f = _files[index];
-                final name = f.path.split(Platform.pathSeparator).last;
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Saved sessions'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.fiber_manual_record), text: 'My recordings'),
+              Tab(icon: Icon(Icons.download), text: 'Imported'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // My Recordings tab
+            _buildSessionList(_recordings, 'No recordings found'),
+            // Imported tab
+            _buildSessionList(_imported, 'No imported sessions found'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionList(List<FileSystemEntity> files, String emptyMessage) {
+    if (files.isEmpty) {
+      return Center(child: Text(emptyMessage));
+    }
+
+    return ListView.builder(
+      itemCount: files.length,
+      itemBuilder: (context, index) {
+        final f = files[index];
+        final name = f.path.split(Platform.pathSeparator).last;
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: InkWell(
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SessionReviewScreen(
+                    file: File(f.path),
+                    sessionService: widget.sessionService,
                   ),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => SessionReviewScreen(
-                            file: File(f.path),
-                            sessionService: widget.sessionService,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: FutureBuilder<Map<String, dynamic>>(
-                              future: widget.sessionService.loadSession(
-                                File(f.path),
-                              ),
-                              builder: (context, snapshot) {
-                                final paddlerName =
-                                    snapshot.data?['paddlerName'] as String? ??
-                                    '';
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                    if (paddlerName.isNotEmpty)
-                                      Text(
-                                        paddlerName,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            onSelected: (value) async {
-                              switch (value) {
-                                case 'edit':
-                                  await _showRenameDialog(File(f.path), name);
-                                  break;
-                                case 'export':
-                                  final messenger = ScaffoldMessenger.of(context);
-                                  final csv = await widget.sessionService
-                                      .exportSessionCsv(File(f.path));
-                                  if (mounted) {
-                                    messenger.showSnackBar(
-                                      SnackBar(content: Text('Exported: $csv')),
-                                    );
-                                  }
-                                  break;
-                                case 'delete':
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text('Delete session?'),
-                                      content: Text('Delete $name?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          child: const Text('Delete'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (confirm == true) {
-                                    await widget.sessionService.deleteSession(
-                                      File(f.path),
-                                    );
-                                    _loadFiles();
-                                  }
-                                  break;
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit),
-                                    SizedBox(width: 12),
-                                    Text('Rename'),
-                                  ],
+                ),
+              );
+              // Refresh list when returning from review
+              _loadFiles();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FutureBuilder<Map<String, dynamic>>(
+                      future: widget.sessionService.loadSession(File(f.path)),
+                      builder: (context, snapshot) {
+                        final paddlerName =
+                            snapshot.data?['paddlerName'] as String? ?? '';
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(name, style: const TextStyle(fontSize: 16)),
+                            if (paddlerName.isNotEmpty)
+                              Text(
+                                paddlerName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
                                 ),
                               ),
-                              const PopupMenuItem(
-                                value: 'export',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.download),
-                                    SizedBox(width: 12),
-                                    Text('Export CSV'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      'Delete',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      },
                     ),
                   ),
-                );
-              },
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'edit':
+                          await _showRenameDialog(File(f.path), name);
+                          break;
+                        case 'export':
+                          final messenger = ScaffoldMessenger.of(context);
+                          final csv = await widget.sessionService
+                              .exportSessionCsv(File(f.path));
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('Exported: $csv')),
+                            );
+                          }
+                          break;
+                        case 'delete':
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Delete session?'),
+                              content: Text('Delete $name?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await widget.sessionService.deleteSession(
+                              File(f.path),
+                            );
+                            _loadFiles();
+                          }
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit),
+                            SizedBox(width: 12),
+                            Text('Rename'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'export',
+                        child: Row(
+                          children: [
+                            Icon(Icons.download),
+                            SizedBox(width: 12),
+                            Text('Export CSV'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red),
+                            SizedBox(width: 12),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
+          ),
+        );
+      },
     );
   }
 }

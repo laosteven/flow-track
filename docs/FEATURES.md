@@ -230,7 +230,46 @@ The system automatically:
 - Session stroke count tracks separately from total
 - End summary includes duration and stroke count
 
-## 💡 Tips for Best Results
+## � Session Sharing & Export
+
+### Share Sessions with Coaches 🆕
+**New in v1.4.0**: Share recorded sessions instantly via deep links!
+
+**How It Works:**
+1. **Record & Review** - Complete a session and open it for review
+2. **Share** - Tap menu (⋮) → "Share Session"
+3. **Send** - Share via WhatsApp, email, SMS, or any messaging app
+4. **Coach Opens** - Link automatically opens app and imports session
+5. **Instant Analysis** - All metrics, graphs, and data available immediately
+
+**What Gets Shared:**
+- Complete sensor data (all accelerometer readings)
+- Detected strokes with timestamps and power
+- Time-series metrics (SPM, consistency, power, distance, speed)
+- Session metadata (name, paddler, date/time)
+
+**Technical Details:**
+- Uses compressed deep links (`flowtrack://session?data=...`)
+- Data is gzip compressed (80-90% size reduction)
+- Works offline - no cloud required
+- Includes JSON file attachment as backup
+- Cross-platform: Android & iOS support
+
+**Benefits for Paddlers & Coaches:**
+- 📱 **Instant feedback** - No need to meet in person
+- 📊 **Complete data** - All metrics preserved exactly
+- 🔒 **Privacy-first** - Data shared only when you choose
+- 🌐 **Works offline** - Direct peer-to-peer sharing
+- 💪 **Team collaboration** - Easy to share with multiple coaches
+
+**See the complete guide:** [Session Sharing Documentation](SESSION_SHARING.md)
+
+### Export Options
+- **Share Session** - Deep link + JSON file for coaches
+- **Generate Report** - Visual PNG report with graphs
+- **Save Locally** - Auto-saved to Downloads folder
+
+## �💡 Tips for Best Results
 
 ### Sensor Mounting
 - Mount securely on paddle shaft near blade

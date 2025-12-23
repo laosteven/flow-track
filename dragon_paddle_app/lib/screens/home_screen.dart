@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/ble_service.dart';
 import '../services/stroke_analyzer.dart';
 import '../services/session_service.dart';
@@ -306,6 +307,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const Spacer(),
+              ListTile(
+                leading: const Icon(Icons.code),
+                title: const Text('GitHub'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final uri = Uri.parse('https://github.com/laosteven/flow-track');
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Could not open browser: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
               if (_isConnected)
                 ListTile(
                   leading: const Icon(Icons.refresh),

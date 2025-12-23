@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -6,6 +7,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/session_service.dart';
+import '../services/session_share_service.dart';
 import '../services/stroke_analyzer.dart';
 import '../models/sensor_data.dart';
 import '../widgets/session_report_widget.dart';
@@ -164,6 +166,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             PopupMenuButton<String>(
               onSelected: (value) async {
                 switch (value) {
+                  case 'share':
+                    await _shareSession();
+                    break;
                   case 'export':
                     final messenger = ScaffoldMessenger.of(context);
                     final csv = await widget.sessionService.exportSessionCsv(
@@ -213,6 +218,16 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
+                  value: 'share',
+                  child: Row(
+                    children: [
+                      Icon(Icons.share),
+                      SizedBox(width: 12),
+                      Text('Share'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'export',
                   child: Row(
                     children: [
@@ -236,7 +251,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                   value: 'report',
                   child: Row(
                     children: [
-                      Icon(Icons.image),
+                      Icon(Icons.description),
                       SizedBox(width: 12),
                       Text('Generate report'),
                     ],
@@ -693,7 +708,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     if (values.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     // Find max and min indices
     int maxIndex = 0;
     int minIndex = 0;
@@ -701,7 +716,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       if (values[i] > values[maxIndex]) maxIndex = i;
       if (values[i] < values[minIndex]) minIndex = i;
     }
-    
+
     return LineChart(
       LineChartData(
         lineTouchData: const LineTouchData(enabled: true),
@@ -719,7 +734,8 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               show: true,
               checkToShowDot: (spot, barData) {
                 // Only show dots for max and min points
-                return spot.x == maxIndex.toDouble() || spot.x == minIndex.toDouble();
+                return spot.x == maxIndex.toDouble() ||
+                    spot.x == minIndex.toDouble();
               },
               getDotPainter: (spot, percent, barData, index) {
                 final isMax = spot.x == maxIndex.toDouble();
@@ -753,7 +769,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     if (values.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     // Find max and min indices
     int maxIndex = 0;
     int minIndex = 0;
@@ -761,7 +777,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       if (values[i] > values[maxIndex]) maxIndex = i;
       if (values[i] < values[minIndex]) minIndex = i;
     }
-    
+
     return LineChart(
       LineChartData(
         lineTouchData: const LineTouchData(enabled: true),
@@ -779,7 +795,8 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               show: true,
               checkToShowDot: (spot, barData) {
                 // Only show dots for max and min points
-                return spot.x == maxIndex.toDouble() || spot.x == minIndex.toDouble();
+                return spot.x == maxIndex.toDouble() ||
+                    spot.x == minIndex.toDouble();
               },
               getDotPainter: (spot, percent, barData, index) {
                 final isMax = spot.x == maxIndex.toDouble();
@@ -875,21 +892,134 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
         });
   }
 
+  Future<void> _shareSession() async {
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Preparing session for sharing...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Export the session data - just save as JSON file
+      final sessionName = _data?['name'] as String? ?? 'Session';
+      final paddlerName = _data?['paddlerName'] as String? ?? '';
+
+      // Save to temporary directory
+      final tempDir = await getTemporaryDirectory();
+      final safeName = sessionName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+      final safePaddlerName = paddlerName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      // Avoid duplicate paddler name in filename
+      // If session name already starts with paddler name, don't prepend it
+      final bool nameStartsWithPaddler =
+          safePaddlerName.isNotEmpty &&
+          safeName.toLowerCase().startsWith(safePaddlerName.toLowerCase());
+
+      final fileName = safePaddlerName.isNotEmpty && !nameStartsWithPaddler
+          ? '${safePaddlerName}_${safeName}_$timestamp.flowtrack'
+          : '${safeName}_$timestamp.flowtrack';
+      final jsonFile = File('${tempDir.path}/$fileName');
+      await jsonFile.writeAsString(json.encode(_data));
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Share the JSON file directly
+      final displayName = paddlerName.isNotEmpty ? paddlerName : sessionName;
+      final message =
+          '🐉 Flow Track Session: $displayName\n\n'
+          '📎 Download and open the attached file in Flow Track app.\n\n'
+          'Tip: Tap the file after downloading to import automatically!';
+
+      await Share.shareXFiles(
+        [XFile(jsonFile.path)],
+        text: message,
+        subject: 'Flow Track session: $displayName',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Session shared successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share session: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _renameSession() async {
     final paddlerName = _data?['paddlerName'] as String? ?? '';
-    final controller = TextEditingController(text: paddlerName);
+    final paddlerController = TextEditingController(text: paddlerName);
 
-    final newName = await showDialog<String>(
+    // Extract current filename without path and extension
+    String currentFilename = widget.file.path
+        .split(Platform.pathSeparator)
+        .last;
+    currentFilename = currentFilename
+        .replaceAll('.json', '')
+        .replaceAll('.flowtrack', '');
+    final filenameController = TextEditingController(text: currentFilename);
+
+    final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename Session'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Paddler Name',
-            hintText: 'Enter paddler name',
-          ),
-          autofocus: true,
+        title: const Text('Rename session'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: filenameController,
+              decoration: const InputDecoration(
+                labelText: 'Filename (without extension)',
+                hintText: 'Enter filename',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: paddlerController,
+              decoration: const InputDecoration(
+                labelText: 'Paddler name',
+                hintText: 'Enter paddler name',
+              ),
+              textCapitalization: TextCapitalization.words,
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -897,26 +1027,98 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            onPressed: () => Navigator.of(context).pop({
+              'paddlerName': paddlerController.text.trim(),
+              'filename': filenameController.text.trim(),
+            }),
             child: const Text('Save'),
           ),
         ],
       ),
     );
 
-    if (newName != null && newName.isNotEmpty && newName != paddlerName) {
-      // Update the data map
-      _data?['paddlerName'] = newName;
-      // Save back to file
-      await widget.sessionService.updatePaddlerName(widget.file, newName);
-      setState(() {});
+    if (result != null) {
+      final newPaddlerName = result['paddlerName'] ?? '';
+      final newFilename = result['filename'] ?? '';
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Session renamed successfully')),
+      bool updated = false;
+
+      // Update paddler name if changed
+      if (newPaddlerName.isNotEmpty && newPaddlerName != paddlerName) {
+        _data?['paddlerName'] = newPaddlerName;
+        await widget.sessionService.updatePaddlerName(
+          widget.file,
+          newPaddlerName,
         );
+        updated = true;
+      }
+
+      // Rename file if changed
+      if (newFilename.isNotEmpty && newFilename != currentFilename) {
+        final directory = widget.file.parent;
+        // Preserve the original extension
+        final extension = widget.file.path.endsWith('.flowtrack')
+            ? '.flowtrack'
+            : '.json';
+        final newPath =
+            '${directory.path}${Platform.pathSeparator}$newFilename$extension';
+        final newFile = File(newPath);
+
+        // Check if new filename already exists
+        if (await newFile.exists()) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('A file with that name already exists'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        } else {
+          try {
+            await widget.file.rename(newPath);
+            updated = true;
+
+            // Update the widget's file reference by replacing current screen
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => SessionReviewScreen(
+                    file: newFile,
+                    sessionService: widget.sessionService,
+                  ),
+                ),
+              );
+            }
+            return;
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to rename file: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        }
+      }
+
+      if (updated) {
+        setState(() {});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Session renamed successfully')),
+          );
+        }
       }
     }
+  }
+
+  @override
+  void dispose() {
+    // Pop with true to signal list should refresh if any changes were made
+    super.dispose();
   }
 
   Future<void> _generateReport() async {
@@ -931,10 +1133,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       final speed = _analyzer.getSpeed();
       final split500m = _analyzer.getSplit500m();
 
-      // Parse filename to extract date/time (format: 2025-12-21_01-58-40.json)
+      // Parse filename to extract date/time (format: 2025-12-21_01-58-40.json or .flowtrack)
       String formattedDate = title;
       try {
-        final nameWithoutExt = title.replaceAll('.json', '');
+        String nameWithoutExt = title
+            .replaceAll('.json', '')
+            .replaceAll('.flowtrack', '');
         final parts = nameWithoutExt.split('_');
         if (parts.length == 2) {
           final dateParts = parts[0].split('-');
@@ -1056,6 +1260,9 @@ class _ReportCaptureScreen extends StatefulWidget {
 }
 
 class _ReportCaptureScreenState extends State<_ReportCaptureScreen> {
+  bool _showCloseButton = false;
+  bool _isCapturing = true;
+
   @override
   void initState() {
     super.initState();
@@ -1076,16 +1283,15 @@ class _ReportCaptureScreenState extends State<_ReportCaptureScreen> {
         throw Exception('Failed to capture screenshot');
       }
 
+      setState(() {
+        _isCapturing = false;
+      });
+
       // Save to temporary directory
       final tempDir = await getTemporaryDirectory();
       final fileName = 'report_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(image);
-
-      // Pop this screen
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
 
       // Share the image
       await Share.shareXFiles(
@@ -1093,9 +1299,20 @@ class _ReportCaptureScreenState extends State<_ReportCaptureScreen> {
         subject: 'Session Report - ${widget.paddlerName}',
         text: 'Session report for ${widget.sessionName}',
       );
+
+      // Show close button after a short delay
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        setState(() {
+          _showCloseButton = true;
+        });
+      }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop();
+        setState(() {
+          _isCapturing = false;
+          _showCloseButton = true;
+        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -1107,26 +1324,71 @@ class _ReportCaptureScreenState extends State<_ReportCaptureScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Screenshot(
-        controller: widget.screenshotController,
-        child: SessionReportWidget(
-          sessionName: widget.sessionName,
-          paddlerName: widget.paddlerName,
-          strokeRate: widget.strokeRate,
-          consistency: widget.consistency,
-          totalStrokes: widget.totalStrokes,
-          avgPower: widget.avgPower,
-          distance: widget.distance,
-          speed: widget.speed,
-          split500m: widget.split500m,
-          magnitudes: widget.magnitudes,
-          spmSeries: widget.spmSeries,
-          consistencySeries: widget.consistencySeries,
-          avgPowerSeries: widget.avgPowerSeries,
-          distanceSeries: widget.distanceSeries,
-          speedSeries: widget.speedSeries,
-          split500mSeries: widget.split500mSeries,
-        ),
+      body: Stack(
+        children: [
+          Screenshot(
+            controller: widget.screenshotController,
+            child: SessionReportWidget(
+              sessionName: widget.sessionName,
+              paddlerName: widget.paddlerName,
+              strokeRate: widget.strokeRate,
+              consistency: widget.consistency,
+              totalStrokes: widget.totalStrokes,
+              avgPower: widget.avgPower,
+              distance: widget.distance,
+              speed: widget.speed,
+              split500m: widget.split500m,
+              magnitudes: widget.magnitudes,
+              spmSeries: widget.spmSeries,
+              consistencySeries: widget.consistencySeries,
+              avgPowerSeries: widget.avgPowerSeries,
+              distanceSeries: widget.distanceSeries,
+              speedSeries: widget.speedSeries,
+              split500mSeries: widget.split500mSeries,
+            ),
+          ),
+          // Loading indicator
+          if (_isCapturing)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Generating report...'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Close button
+          if (_showCloseButton)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: SafeArea(
+                child: Material(
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'Close',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

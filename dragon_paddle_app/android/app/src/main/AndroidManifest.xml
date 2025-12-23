@@ -39,6 +39,37 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
+            <!-- Deep link intent filter for session sharing -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <!-- Handle flowtrack:// custom scheme -->
+                <data android:scheme="flowtrack" android:host="session"/>
+            </intent-filter>
+            
+            <!-- App Links for https://flowtrack.app domain (optional, for future web integration) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="flowtrack.app" android:pathPrefix="/session"/>
+            </intent-filter>
+            
+            <!-- Handle .flowtrack file opens for session import -->
+            <intent-filter android:priority="999">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:mimeType="*/*"/>
+                <data android:host="*"/>
+                <data android:pathPattern=".*\\.flowtrack"/>
+                <data android:pathPattern=".*\\..*\\.flowtrack"/>
+                <data android:pathPattern=".*\\..*\\..*\\.flowtrack"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

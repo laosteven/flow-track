@@ -17,6 +17,46 @@ class SessionService {
 
   bool get isRecording => _recording;
 
+  /// Get the FlowTrack base directory
+  static Future<Directory> _getFlowTrackDirectory() async {
+    Directory baseDir;
+    if (Platform.isAndroid) {
+      // Try to use Documents folder on Android
+      baseDir = Directory('/storage/emulated/0/Documents');
+      if (!await baseDir.exists()) {
+        baseDir = await getApplicationDocumentsDirectory();
+      }
+    } else {
+      baseDir = await getApplicationDocumentsDirectory();
+    }
+    
+    final flowTrackDir = Directory('${baseDir.path}/FlowTrack');
+    if (!await flowTrackDir.exists()) {
+      await flowTrackDir.create(recursive: true);
+    }
+    return flowTrackDir;
+  }
+
+  /// Get the recordings directory
+  static Future<Directory> _getRecordingsDirectory() async {
+    final flowTrackDir = await _getFlowTrackDirectory();
+    final recordingsDir = Directory('${flowTrackDir.path}/recordings');
+    if (!await recordingsDir.exists()) {
+      await recordingsDir.create(recursive: true);
+    }
+    return recordingsDir;
+  }
+
+  /// Get the imported sessions directory
+  static Future<Directory> _getImportedDirectory() async {
+    final flowTrackDir = await _getFlowTrackDirectory();
+    final importedDir = Directory('${flowTrackDir.path}/imported');
+    if (!await importedDir.exists()) {
+      await importedDir.create(recursive: true);
+    }
+    return importedDir;
+  }
+
   Future<void> start() async {
     _buffer.clear();
     _strokeEvents.clear();
@@ -142,22 +182,14 @@ class SessionService {
       'metrics': _metrics,
     };
 
-    // Save to Downloads folder for easier access
-    Directory? dir;
-    if (Platform.isAndroid) {
-      dir = Directory('/storage/emulated/0/Download');
-      if (!await dir.exists()) {
-        dir = await getApplicationDocumentsDirectory();
-      }
-    } else {
-      dir = await getApplicationDocumentsDirectory();
-    }
+    // Save to FlowTrack/recordings/ folder
+    final dir = await _getRecordingsDirectory();
     String filenameBase = sessionName.replaceAll(' ', '_');
-    String filePath = '${dir.path}/$filenameBase.json';
+    String filePath = '${dir.path}/$filenameBase.flowtrack';
     // avoid collisions by appending a counter
     int counter = 1;
     while (await File(filePath).exists()) {
-      filePath = '${dir.path}/${filenameBase}_$counter.json';
+      filePath = '${dir.path}/${filenameBase}_$counter.flowtrack';
       counter++;
     }
     final file = File(filePath);
@@ -167,24 +199,76 @@ class SessionService {
     return file.path;
   }
 
-  Future<List<FileSystemEntity>> listSessions() async {
-    Directory dir;
-    if (Platform.isAndroid) {
-      dir = Directory('/storage/emulated/0/Download');
-      if (!await dir.exists()) {
-        dir = await getApplicationDocumentsDirectory();
-      }
-    } else {
-      dir = await getApplicationDocumentsDirectory();
-    }
+  /// List user's own recordings
+  Future<List<FileSystemEntity>> listRecordings() async {
+    final dir = await _getRecordingsDirectory();
+    
     final files = dir
         .listSync()
-        .where((f) => f.path.endsWith('.json'))
+        .where((f) => f.path.endsWith('.json') || f.path.endsWith('.flowtrack'))
         .toList();
+    
     files.sort(
       (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
     );
     return files;
+  }
+
+  /// List imported sessions
+  Future<List<FileSystemEntity>> listImported() async {
+    final dir = await _getImportedDirectory();
+    
+    final files = dir
+        .listSync()
+        .where((f) => f.path.endsWith('.json') || f.path.endsWith('.flowtrack'))
+        .toList();
+    
+    files.sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
+    return files;
+  }
+
+  /// List all sessions (recordings + imported) for backward compatibility
+  Future<List<FileSystemEntity>> listSessions() async {
+    final recordings = await listRecordings();
+    final imported = await listImported();
+    
+    final allFiles = [...recordings, ...imported];
+    
+    // Also check old locations for backward compatibility
+    try {
+      Directory? oldDir;
+      if (Platform.isAndroid) {
+        oldDir = Directory('/storage/emulated/0/Download');
+        if (!await oldDir.exists()) {
+          oldDir = null;
+        }
+      }
+      
+      if (oldDir != null) {
+        final oldFiles = oldDir
+            .listSync()
+            .where((f) => f.path.endsWith('.json') || f.path.endsWith('.flowtrack'))
+            .toList();
+        allFiles.addAll(oldFiles);
+        
+        // Check old sessions subdirectory
+        final sessionsDir = Directory('${oldDir.path}/sessions');
+        if (await sessionsDir.exists()) {
+          final sessionFiles = sessionsDir
+              .listSync()
+              .where((f) => f.path.endsWith('.json') || f.path.endsWith('.flowtrack'))
+              .toList();
+          allFiles.addAll(sessionFiles);
+        }
+      }
+    } catch (_) {}
+    
+    allFiles.sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
+    return allFiles;
   }
 
   Future<Map<String, dynamic>> loadSession(File file) async {
@@ -201,8 +285,10 @@ class SessionService {
       buffer.writeln('${s['t']},${s['x']},${s['y']},${s['z']}');
     }
 
-    // Save CSV to same directory as JSON file (already in Downloads on Android)
-    final out = File(file.path.replaceAll('.json', '.csv'));
+    // Save CSV to same directory as session file (already in Downloads on Android)
+    String csvPath = file.path.replaceAll('.json', '.csv');
+    csvPath = csvPath.replaceAll('.flowtrack', '.csv');
+    final out = File(csvPath);
     await out.writeAsString(buffer.toString());
     return out.path;
   }
@@ -225,14 +311,16 @@ class SessionService {
 
     // Save to new file
     final dir = file.parent;
-    final newFilename = '${newName.replaceAll(' ', '_')}.json';
+    // Determine the extension from the original file
+    final extension = file.path.endsWith('.flowtrack') ? '.flowtrack' : '.json';
+    final newFilename = '${newName.replaceAll(' ', '_')}$extension';
     final newPath = '${dir.path}/$newFilename';
 
     // Handle name collisions
     String finalPath = newPath;
     int counter = 1;
     while (await File(finalPath).exists() && finalPath != file.path) {
-      finalPath = '${dir.path}/${newName.replaceAll(' ', '_')}_$counter.json';
+      finalPath = '${dir.path}/${newName.replaceAll(' ', '_')}_$counter$extension';
       counter++;
     }
 
