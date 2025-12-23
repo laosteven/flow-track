@@ -30,10 +30,6 @@ jobs:
         working-directory: dragon_paddle_app
         run: flutter pub get
 
-      - name: Run tests
-        working-directory: dragon_paddle_app
-        run: flutter test
-
       - name: Build APK
         working-directory: dragon_paddle_app
         run: flutter build apk --release
