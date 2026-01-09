@@ -1,5 +1,5 @@
 /*
- * Flow Track - Arduino Firmware
+ * Flow Track - Arduino firmware
  * For Arduino Nano 33 BLE Sense Rev2
  *
  * Simple raw sensor streaming:
@@ -10,7 +10,6 @@
  * Hardware: Arduino Nano 33 BLE Sense Rev2
  * Sensors: BMI270/BMM150 (IMU), HS300x (Temp/Humidity)
  *
- * BLE Service UUID: 180A
  * Characteristics:
  *   - 2A37: Accelerometer (12 bytes) - ax, ay, az
  *   - 2A38: Gyroscope (12 bytes) - gx, gy, gz
@@ -21,9 +20,6 @@
 #include <ArduinoBLE.h>
 #include <Arduino_BMI270_BMM150.h>
 #include <Arduino_HS300x.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
 // BLE Service and Characteristics
 BLEService imuService("180A");
@@ -36,17 +32,12 @@ BLECharacteristic tempChar("2A3B", BLERead | BLENotify, 8);   // temp, humidity
 float currentTemp = 0;
 float currentHumidity = 0;
 unsigned long lastTempRead = 0;
-const unsigned long TEMP_READ_INTERVAL = 1000; // Read temp every second
+const unsigned long TEMP_READ_INTERVAL = 1000;
 
 // LED for visual feedback
 const int LED_PIN = LED_BUILTIN;
 
 #define DEVICE_NAME "FlowTrack"
-
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 32
-#define OLED_RESET -1
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void setup()
 {
@@ -55,7 +46,7 @@ void setup()
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  Serial.println("Flow Track - Raw Sensor Streaming");
+  Serial.println("Flow Track - Raw sensor streaming");
   Serial.println("========================================");
 
   // Initialize IMU
@@ -72,7 +63,7 @@ void setup()
   Serial.println("✓ IMU initialized");
 
   // Initialize Temperature Sensor
-  Serial.println("Initializing Temperature Sensor...");
+  Serial.println("Initializing Temperature sensor...");
   if (!HS300x.begin())
   {
     Serial.println("⚠ Failed to initialize HS300x (Temperature sensor)");
@@ -168,8 +159,11 @@ void setup()
   }
   Serial.println("✓ BLE initialized");
 
-  // Configure BLE
-  BLE.setLocalName(DEVICE_NAME);
+  // Configure BLE with unique name based on MAC address
+  String macAddress = BLE.address();
+  String uniqueName = String(DEVICE_NAME) + "-" + macAddress.substring(macAddress.length() - 5);
+  uniqueName.replace(":", ""); // Remove colon from MAC address suffix
+  BLE.setLocalName(uniqueName.c_str());
   BLE.setAdvertisedService(imuService);
 
   imuService.addCharacteristic(accelChar);
@@ -183,7 +177,9 @@ void setup()
   // Give BLE stack time to fully initialize
   delay(1000);
 
-  Serial.println("✓ BLE advertising as '" DEVICE_NAME "'");
+  Serial.print("✓ BLE advertising as '");
+  Serial.print(uniqueName);
+  Serial.println("'");
   Serial.println("========================================");
   Serial.println("Streaming:");
   Serial.println("  • Raw accelerometer data");
@@ -192,34 +188,6 @@ void setup()
   Serial.println("  • Temperature & humidity");
   Serial.println("========================================");
   Serial.println("Ready! Waiting for connections...");
-
-  // --- OLED Initialization ---
-  Serial.println("Initializing OLED display...");
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
-  {
-    Serial.println("⚠ OLED init failed. Check wiring and address (0x3C/0x3D).");
-  }
-  else
-  {
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    Serial.println("✓ OLED initialized");
-  }
-
-  // Show initial status on OLED
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.drawCircle(3, 3, 2, SSD1306_WHITE);
-  display.setCursor(8, 0);
-  display.print("Standby");
-  display.drawLine(0, 8, 127, 8, SSD1306_WHITE); // Separator line
-  display.setCursor(0, 10);
-  display.print("Name: ");
-  display.print(DEVICE_NAME);
-  display.setCursor(0, 24);
-  display.print(BLE.address());
-  display.display();
 
   // Visual ready indication
   for (int i = 0; i < 3; i++)
@@ -245,7 +213,7 @@ void loop()
     digitalWrite(LED_PIN, HIGH);
 
     unsigned long lastSampleTime = 0;
-    const unsigned long SAMPLE_INTERVAL = 20; // 50Hz
+    const unsigned long SAMPLE_INTERVAL = 10; // 100 Hz
 
     while (central.connected())
     {
@@ -366,89 +334,6 @@ void loop()
 
           lastPrint = currentTime;
         }
-
-        // Update OLED display every 200ms for smooth animation
-        static unsigned long lastOledUpdate = 0;
-        static float accelHistory[64] = {0}; // Store acceleration history for graph (64 samples)
-        static int historyIndex = 0;
-
-        if (currentTime - lastOledUpdate > 200)
-        {
-          lastOledUpdate = currentTime;
-
-          // Update acceleration history for graph
-          accelHistory[historyIndex] = accelMag;
-          historyIndex = (historyIndex + 1) % 64;
-
-          display.clearDisplay();
-          display.setTextSize(1);
-
-          // === TOP SECTION: Status Bar ===
-          // BLE Connection indicator with text
-          display.fillCircle(3, 3, 2, SSD1306_WHITE);
-          display.setCursor(8, 0);
-          display.print("Connected");
-
-          // Signal strength bars (right side)
-          for (int i = 0; i < 4; i++)
-          {
-            int barHeight = (i + 1) * 2;
-            display.fillRect(128 - 18 + (i * 4), 6 - barHeight, 2, barHeight, SSD1306_WHITE);
-          }
-
-          display.drawLine(0, 8, 127, 8, SSD1306_WHITE); // Separator line
-
-          // === MIDDLE SECTION: Data in columns (more compact) ===
-          int row1 = 10;
-          int row2 = 18;
-          int col1 = 0;
-          int col2 = 72;
-
-          // Column 1: Accelerometer
-          display.setCursor(col1, row1);
-          display.print("ACC:");
-          display.setCursor(col1 + 28, row1);
-          display.print(accelMag, 1);
-
-          // Column 2: Gyroscope
-          display.setCursor(col2, row1);
-          display.print("GYR:");
-          display.setCursor(col2 + 28, row1);
-          display.print(gyroMag, 1);
-
-          // Column 1: Temperature
-          display.setCursor(col1, row2);
-          display.print("TMP:");
-          display.setCursor(col1 + 28, row2);
-          display.print(currentTemp, 1);
-          display.print("C");
-
-          // Column 2: Humidity
-          display.setCursor(col2, row2);
-          display.print("HUM:");
-          display.setCursor(col2 + 28, row2);
-          display.print((int)currentHumidity);
-          display.print("%");
-
-          // === BOTTOM SECTION: Acceleration Graph (8 pixels tall) ===
-          // Draw graph from y=24 to y=31 (8 pixels tall)
-          int graphBottom = 31;
-          int graphHeight = 6;
-
-          // Draw every other sample to fit 64 samples in 128 pixels (2 pixels per sample)
-          for (int i = 0; i < 64; i++)
-          {
-            int x = i * 2; // Each sample takes 2 pixels width
-            float movement = accelHistory[i] - 1.0;
-            int barHeight = constrain((int)(movement * 8), 1, graphHeight);
-            if (barHeight > 0)
-            {
-              display.fillRect(x, graphBottom - barHeight + 1, 2, barHeight, SSD1306_WHITE);
-            }
-          }
-
-          display.display();
-        }
       }
 
       delay(1);
@@ -458,20 +343,6 @@ void loop()
     Serial.println("");
     Serial.print("✗ Disconnected from: ");
     Serial.println(central.address());
-
-    // Show disconnected on OLED
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.drawCircle(3, 3, 2, SSD1306_WHITE);
-    display.setCursor(8, 0);
-    display.print("Disconnected");
-    display.drawLine(0, 8, 127, 8, SSD1306_WHITE); // Separator line
-    display.setCursor(0, 10);
-    display.print("Name: ");
-    display.print(DEVICE_NAME);
-    display.setCursor(0, 24);
-    display.print(BLE.address());
-    display.display();
   }
   delay(1);
 }
