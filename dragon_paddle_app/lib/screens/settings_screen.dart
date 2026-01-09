@@ -108,9 +108,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     textCapitalization: TextCapitalization.words,
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Coming soon banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              border: Border.all(color: Colors.orange, width: 1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.construction, color: Colors.orange),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Coming soon',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Team settings
+          Card(
+            color: Colors.grey.withOpacity(0.1),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Team',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _boatController,
+                    enabled: false,
                     decoration: const InputDecoration(
                       labelText: 'Boat/Team name',
                       hintText: 'Enter boat or team name',
@@ -126,8 +175,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Recording Settings
+          // Recording settings
           Card(
+            color: Colors.grey.withOpacity(0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -137,6 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Recording',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Colors.grey,
                         ),
                   ),
                   const SizedBox(height: 8),
@@ -146,22 +197,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Automatically save recordings when stopped',
                     ),
                     value: _autoSaveSessions,
-                    onChanged: (value) {
-                      setState(() {
-                        _autoSaveSessions = value;
-                      });
-                    },
+                    onChanged: null,
                     secondary: const Icon(Icons.save),
                   ),
                   SwitchListTile(
                     title: const Text('Haptic feedback'),
                     subtitle: const Text('Vibrate on stroke detection'),
                     value: _vibrateFeedback,
-                    onChanged: (value) {
-                      setState(() {
-                        _vibrateFeedback = value;
-                      });
-                    },
+                    onChanged: null,
                     secondary: const Icon(Icons.vibration),
                   ),
                 ],
@@ -172,6 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Display Settings
           Card(
+            color: Colors.grey.withOpacity(0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -181,6 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Display',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Colors.grey,
                         ),
                   ),
                   const SizedBox(height: 8),
@@ -190,11 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Prevent screen from turning off while connected',
                     ),
                     value: _keepScreenAwake,
-                    onChanged: (value) {
-                      setState(() {
-                        _keepScreenAwake = value;
-                      });
-                    },
+                    onChanged: null,
                     secondary: const Icon(Icons.brightness_high),
                   ),
                   SwitchListTile(
@@ -203,11 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Display temperature, trajectory, and other advanced data',
                     ),
                     value: _showAdvancedMetrics,
-                    onChanged: (value) {
-                      setState(() {
-                        _showAdvancedMetrics = value;
-                      });
-                    },
+                    onChanged: null,
                     secondary: const Icon(Icons.analytics),
                   ),
                 ],

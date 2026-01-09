@@ -218,26 +218,6 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
-                  value: 'share',
-                  child: Row(
-                    children: [
-                      Icon(Icons.share),
-                      SizedBox(width: 12),
-                      Text('Share'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'export',
-                  child: Row(
-                    children: [
-                      Icon(Icons.download),
-                      SizedBox(width: 12),
-                      Text('Export CSV'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
                   value: 'rename',
                   child: Row(
                     children: [
@@ -247,6 +227,26 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                     ],
                   ),
                 ),
+                const PopupMenuItem(
+                  value: 'share',
+                  child: Row(
+                    children: [
+                      Icon(Icons.share),
+                      SizedBox(width: 12),
+                      Text('Share'),
+                    ],
+                  ),
+                ),
+                // const PopupMenuItem(
+                //   value: 'export',
+                //   child: Row(
+                //     children: [
+                //       Icon(Icons.download),
+                //       SizedBox(width: 12),
+                //       Text('Export CSV'),
+                //     ],
+                //   ),
+                // ),
                 const PopupMenuItem(
                   value: 'report',
                   child: Row(

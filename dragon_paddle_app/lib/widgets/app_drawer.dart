@@ -35,7 +35,7 @@ class AppDrawer extends StatelessWidget {
                 "Flow Track",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              accountEmail: const Text("Dragon paddle tracker"),
+              accountEmail: const Text("Dragon boat paddle tracker"),
             ),
             ListTile(
               leading: const Icon(Icons.home),

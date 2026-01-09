@@ -10,20 +10,22 @@ class StrokeAnalyzer {
   final StreamController<Map<String, dynamic>> _strokeController =
       StreamController.broadcast();
 
-  static const int maxHistorySize = 500; // Keep last 10 seconds at 50Hz
-  static const double strokeThreshold =
-      1.0; // Magnitude threshold for stroke detection
-  static const int minStrokeDurationMs =
-      350; // Increased refractory time to avoid double-counting
-  static const double emaAlpha = 0.12; // Slightly slower EMA smoothing
-  static const int dynamicWindow = 30; // larger window for more stable stats
-  static const double dynamicK = 1.6; // higher multiplier => less sensitive
-  static const double minThresholdFloor =
-      0.8; // raised floor to reduce noise triggers
-
+  // Keep last 10 seconds at 50Hz for graphing
+  static const int maxHistorySize = 500;
+  // Base magnitude threshold for stroke detection (↓ = more sensitive, may add false positives)
+  static const double strokeThreshold = 0.4;
+  // Refractory period: minimum ms between strokes (↓ = allows faster rates, may double-count)
+  static const int minStrokeDurationMs = 300;
+  // Baseline tracking speed: how fast EMA adapts to changes (↓ = slower, preserves peaks better)
+  static const double emaAlpha = 0.08;
+  // Window size for computing dynamic threshold statistics
+  static const int dynamicWindow = 30;
+  // Dynamic threshold multiplier: mean + k×stddev (↓ = more sensitive)
+  static const double dynamicK = 1.2;
+  // Absolute minimum threshold regardless of dynamic calculation (↓ = catches lighter strokes)
+  static const double minThresholdFloor = 0.3;
   // Distance tracking parameters
-  static const double averageStrokeLength =
-      2.5; // meters per stroke (configurable)
+  static const double averageStrokeLength = 2.5;
 
   bool _isInStroke = false;
   DateTime? _lastStrokeTime;
@@ -56,8 +58,7 @@ class StrokeAnalyzer {
     final adjusted = AccelerometerData(
       x: data.x,
       y: data.y,
-      z:
-          data.z -
+      z: data.z -
           _baselineEma, // note: we only need magnitude, but store adjusted z to keep structure
       timestamp: data.timestamp,
     );
@@ -85,7 +86,7 @@ class StrokeAnalyzer {
       final mean = slice.reduce((a, b) => a + b) / slice.length;
       final variance =
           slice.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) /
-          slice.length;
+              slice.length;
       final stdDev = math.sqrt(variance);
       dynamicThreshold = (mean + dynamicK * stdDev).clamp(
         minThresholdFloor,
@@ -103,8 +104,8 @@ class StrokeAnalyzer {
 
     // Trigger either by crossing dynamic threshold OR a strong derivative spike
     final bool triggerByThreshold = adjustedMag > dynamicThreshold;
-    // derivative must be a positive spike and reasonably large relative to threshold
-    final bool triggerByDerivative = derivative > (dynamicThreshold * 0.8);
+    // Lowered derivative threshold for better sensitivity (was 0.8)
+    final bool triggerByDerivative = derivative > (dynamicThreshold * 0.5);
 
     _detectStrokeWithMagnitude(
       adjustedMag,
@@ -190,7 +191,7 @@ class StrokeAnalyzer {
 
     final variance =
         powers.map((p) => (p - mean) * (p - mean)).reduce((a, b) => a + b) /
-        powers.length;
+            powers.length;
     final stdDev = math.sqrt(variance);
 
     // Convert to consistency percentage (lower variation = higher consistency)
@@ -218,11 +219,13 @@ class StrokeAnalyzer {
   /// Get current speed in meters per second
   /// Returns 0 if no recent strokes or session just started
   double getSpeed() {
-    if (_totalStrokes < 2 || _sessionStartTime == null || _lastDataTime == null) return 0.0;
+    if (_totalStrokes < 2 || _sessionStartTime == null || _lastDataTime == null)
+      return 0.0;
 
     final distance = getDistance();
     // Use actual data time span, not DateTime.now() (important for reviewing recorded sessions)
-    final elapsed = _lastDataTime!.difference(_sessionStartTime!).inMilliseconds / 1000.0;
+    final elapsed =
+        _lastDataTime!.difference(_sessionStartTime!).inMilliseconds / 1000.0;
 
     if (elapsed <= 0) return 0.0;
 

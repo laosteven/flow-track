@@ -256,16 +256,16 @@ class _SessionListScreenState extends State<SessionListScreen> {
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
-                        value: 'export',
-                        child: Row(
-                          children: [
-                            Icon(Icons.download),
-                            SizedBox(width: 12),
-                            Text('Export CSV'),
-                          ],
-                        ),
-                      ),
+                      // const PopupMenuItem(
+                      //   value: 'export',
+                      //   child: Row(
+                      //     children: [
+                      //       Icon(Icons.download),
+                      //       SizedBox(width: 12),
+                      //       Text('Export CSV'),
+                      //     ],
+                      //   ),
+                      // ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Row(

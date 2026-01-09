@@ -361,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 20),
-          if (_discoveredDevices.isEmpty && !_isScanning)
+          if (!_isScanning)
             ElevatedButton.icon(
               onPressed: _toggleScan,
               icon: const Icon(Icons.search),
