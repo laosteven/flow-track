@@ -49,6 +49,10 @@
 	<string>This app needs Bluetooth to connect to the Flow Track device and receive real-time motion data.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>This app needs Bluetooth to connect to the Flow Track device and receive real-time motion data.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
