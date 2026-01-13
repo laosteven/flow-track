@@ -265,49 +265,61 @@ class BleService {
   }
 
   Future<bool> _ensurePermissions() async {
-    _emitStatus('Requesting permissions...');
+    _emitStatus('Checking permissions...');
     
     try {
-      // On iOS, we mainly need Bluetooth permission
-      // On Android 12+, we need BLUETOOTH_SCAN and BLUETOOTH_CONNECT
-      final permissions = <Permission>[
-        Permission.bluetooth,
-      ];
-      
-      // Add platform-specific permissions
-      if (!kIsWeb) {
-        if (Platform.isAndroid) {
-          permissions.addAll([
-            Permission.locationWhenInUse,
-            Permission.bluetoothScan,
-            Permission.bluetoothConnect,
-          ]);
-        } else if (Platform.isIOS) {
-          // iOS only needs bluetooth permission (NSBluetoothAlwaysUsageDescription)
-          // Location is not required for BLE on iOS 13+
+      // On iOS, Bluetooth permission is handled automatically by the system
+      // when we try to scan. The permission_handler package is unreliable for
+      // Bluetooth on iOS. Just check BLE status instead.
+      if (!kIsWeb && Platform.isIOS) {
+        // On iOS, we rely on the BLE library to trigger the system permission dialog
+        // Check if BLE is ready
+        final status = await _ble.statusStream.first;
+        if (status == BleStatus.ready) {
+          _emitStatus('iOS: BLE ready');
+          return true;
+        } else if (status == BleStatus.unauthorized) {
+          _emitStatus('ERROR: Bluetooth not authorized - check Settings > Privacy > Bluetooth');
+          return false;
+        } else if (status == BleStatus.poweredOff) {
+          _emitStatus('ERROR: Bluetooth is off - enable in Control Center');
+          return false;
+        } else {
+          _emitStatus('BLE status: $status - attempting scan anyway');
+          return true; // Try anyway, iOS will prompt if needed
         }
       }
       
-      final statuses = await permissions.request();
-      
-      // Log each permission status
-      for (final entry in statuses.entries) {
-        _emitStatus('Permission ${entry.key}: ${entry.value}');
-      }
+      // On Android 12+, we need BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+      if (!kIsWeb && Platform.isAndroid) {
+        final permissions = <Permission>[
+          Permission.locationWhenInUse,
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+        ];
+        
+        final statuses = await permissions.request();
+        
+        // Log each permission status
+        for (final entry in statuses.entries) {
+          _emitStatus('Permission ${entry.key}: ${entry.value}');
+        }
 
-      // Check if required permissions are granted
-      final bluetoothGranted = statuses[Permission.bluetooth]?.isGranted ?? false;
-      
-      if (!bluetoothGranted) {
-        _emitStatus('ERROR: Bluetooth permission denied - go to Settings > Flow Track > Bluetooth');
-        return false;
+        // Check if any critical permission is denied
+        final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
+        final connectGranted = statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+        
+        if (!scanGranted || !connectGranted) {
+          _emitStatus('ERROR: Bluetooth permissions denied');
+          return false;
+        }
       }
       
       _emitStatus('Permissions OK');
       return true;
     } catch (e) {
-      _emitStatus('Permission error: $e');
-      return false;
+      _emitStatus('Permission check error: $e - trying anyway');
+      return true; // Try scanning anyway
     }
   }
 
