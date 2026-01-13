@@ -98,9 +98,49 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
-      - name: Build iOS (with codesign)
+      - name: Build iOS (no codesign)
         working-directory: dragon_paddle_app
-        run: flutter build ios --release
+        run: flutter build ios --release --no-codesign
+
+      - name: Get signing identity
+        id: signing_identity
+        run: |
+          IDENTITY=$(security find-identity -v -p codesigning $RUNNER_TEMP/app-signing.keychain-db | grep "Apple Distribution" | head -1 | grep -o '".*"' | sed 's/"//g')
+          echo "identity=$IDENTITY" >> $GITHUB_OUTPUT
+          echo "Found identity: $IDENTITY"
+
+      - name: Get provisioning profile UUID
+        id: pp_uuid
+        run: |
+          PP_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -1)
+          PP_UUID=$(grep -a -A 1 "UUID" "$PP_PATH" | grep string | sed -e 's/<[^>]*>//g' | xargs)
+          echo "uuid=$PP_UUID" >> $GITHUB_OUTPUT
+          echo "Found UUID: $PP_UUID"
+
+      - name: Code sign the app
+        working-directory: dragon_paddle_app
+        env:
+          CODESIGN_IDENTITY: ${{ steps.signing_identity.outputs.identity }}
+          PP_UUID: ${{ steps.pp_uuid.outputs.uuid }}
+        run: |
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          
+          # Copy provisioning profile into the app
+          cp ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision "$APP_PATH/embedded.mobileprovision"
+          
+          # Sign all frameworks and dylibs first
+          find "$APP_PATH/Frameworks" -name "*.framework" -o -name "*.dylib" 2>/dev/null | while read framework; do
+            /usr/bin/codesign --force --sign "$CODESIGN_IDENTITY" --timestamp=none "$framework"
+          done
+          
+          # Sign the app
+          /usr/bin/codesign --force --sign "$CODESIGN_IDENTITY" \
+            --entitlements build/ios/iphoneos/Runner.app.dSYM/../Runner.app.entitlements \
+            --timestamp=none \
+            "$APP_PATH"
+          
+          # Verify the signature
+          codesign -vvv --deep --strict "$APP_PATH"
 
       - name: Create exportOptions.plist
         run: |
@@ -111,6 +151,13 @@ jobs:
           <dict>
               <key>method</key>
               <string>app-store</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.flowtrack.app</key>
+                  <string>${{ steps.pp_uuid.outputs.uuid }}</string>
+              </dict>
               <key>uploadSymbols</key>
               <true/>
               <key>uploadBitcode</key>
@@ -119,24 +166,58 @@ jobs:
           </plist>
           EOF
 
-      - name: Build and export IPA
-        working-directory: dragon_paddle_app/ios
+      - name: Create archive and export IPA
+        working-directory: dragon_paddle_app
         run: |
-          # Create archive
-          xcodebuild -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -archivePath $RUNNER_TEMP/Runner.xcarchive \
-            archive
-
-          # Export IPA
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          ARCHIVE_PATH="$RUNNER_TEMP/Flow_Track.xcarchive"
+          
+          # Create archive directory structure
+          mkdir -p "$ARCHIVE_PATH/Products/Applications"
+          mkdir -p "$ARCHIVE_PATH/dSYMs"
+          
+          # Copy and rename app to archive
+          cp -r "$APP_PATH" "$ARCHIVE_PATH/Products/Applications/Flow_Track.app"
+          
+          # Copy and rename dSYMs if they exist
+          if [ -d "build/ios/iphoneos/Runner.app.dSYM" ]; then
+            cp -r "build/ios/iphoneos/Runner.app.dSYM" "$ARCHIVE_PATH/dSYMs/Flow_Track.app.dSYM"
+          fi
+          
+          # Create Info.plist for archive
+          cat > "$ARCHIVE_PATH/Info.plist" << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>ApplicationProperties</key>
+              <dict>
+                  <key>ApplicationPath</key>
+                  <string>Applications/Flow_Track.app</string>
+                  <key>CFBundleIdentifier</key>
+                  <string>com.flowtrack.app</string>
+                  <key>SigningIdentity</key>
+                  <string>${{ steps.signing_identity.outputs.identity }}</string>
+              </dict>
+              <key>ArchiveVersion</key>
+              <integer>2</integer>
+              <key>Name</key>
+              <string>Flow_Track</string>
+              <key>SchemeName</key>
+              <string>Flow_Track</string>
+          </dict>
+          </plist>
+          EOF
+          
+          # Export IPA using xcodebuild
           xcodebuild -exportArchive \
-            -archivePath $RUNNER_TEMP/Runner.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
-            -exportPath $RUNNER_TEMP/build
-
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -exportPath "$RUNNER_TEMP/build" \
+            -allowProvisioningUpdates
+          
           # Move IPA to expected location
-          mv $RUNNER_TEMP/build/Runner.ipa ../app-release.ipa
+          mv "$RUNNER_TEMP/build/Flow_Track.ipa" app-release.ipa
 
       - name: Clean up keychain and provisioning profile
         if: always()
