@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _keepAwake = false;
   bool _showConnectionBanner = false;
   String _appVersion = '';
+  String _bleStatus = '';  // Status messages from BLE service
 
   final List<DiscoveredDevice> _discoveredDevices = [];
 
@@ -80,6 +81,13 @@ class _HomeScreenState extends State<HomeScreen> {
       // ignore: avoid_print
       print('WakelockPlus not available: $e');
     }
+
+    // Listen to BLE status messages for debugging
+    _bleService.statusMessages.listen((status) {
+      setState(() {
+        _bleStatus = status;
+      });
+    });
 
     // Listen to scan results
     _bleService.scanResults.listen((device) {
@@ -356,6 +364,30 @@ class _HomeScreenState extends State<HomeScreen> {
             _isConnected ? 'Connected' : 'Disconnected',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
+          // Show BLE status for debugging
+          if (_bleStatus.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: _bleStatus.contains('ERROR') 
+                    ? Colors.red.shade100 
+                    : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _bleStatus,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _bleStatus.contains('ERROR') 
+                      ? Colors.red.shade800 
+                      : Colors.grey.shade700,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           if (!_isScanning)
             ElevatedButton.icon(

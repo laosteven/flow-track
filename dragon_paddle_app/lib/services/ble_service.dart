@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:permission_handler/permission_handler.dart';
@@ -24,6 +25,7 @@ class BleService {
   final _metricsController = StreamController<AdvancedMetrics>.broadcast();
   final _temperatureController = StreamController<TemperatureData>.broadcast();
   final _connectionStateController = StreamController<DeviceConnectionState>.broadcast();
+  final _statusController = StreamController<String>.broadcast();
   
   StreamSubscription? _scanSubscription;
   StreamSubscription? _accelSubscription;
@@ -42,14 +44,35 @@ class BleService {
   Stream<AdvancedMetrics> get advancedMetrics => _metricsController.stream;
   Stream<TemperatureData> get temperatureData => _temperatureController.stream;
   Stream<DeviceConnectionState> get connectionState => _connectionStateController.stream;
+  Stream<String> get statusMessages => _statusController.stream;
   
   bool get isConnected => _connectedDeviceId != null;
   
+  void _emitStatus(String message) {
+    if (kDebugMode) {
+      debugPrint('BLE Status: $message');
+    }
+    _statusController.add(message);
+  }
+  
   /// Initialize BLE
   Future<void> initialize() async {
+    _emitStatus('Initializing BLE...');
+    
     // Check BLE status
     await for (final status in _ble.statusStream) {
+      _emitStatus('BLE status: ${status.toString()}');
       if (status == BleStatus.ready) {
+        _emitStatus('BLE ready');
+        break;
+      } else if (status == BleStatus.unauthorized) {
+        _emitStatus('ERROR: Bluetooth unauthorized - check app permissions in Settings');
+        break;
+      } else if (status == BleStatus.poweredOff) {
+        _emitStatus('ERROR: Bluetooth is turned off - enable in Settings');
+        break;
+      } else if (status == BleStatus.unsupported) {
+        _emitStatus('ERROR: Bluetooth not supported on this device');
         break;
       }
     }
@@ -242,23 +265,48 @@ class BleService {
   }
 
   Future<bool> _ensurePermissions() async {
-    // On Android 12+ additional BLUETOOTH_SCAN/CONNECT permissions may be required.
-    // We request location (coarse) as a fallback for older Android versions.
+    _emitStatus('Requesting permissions...');
+    
     try {
-      final statuses = await [
-        Permission.locationWhenInUse,
+      // On iOS, we mainly need Bluetooth permission
+      // On Android 12+, we need BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+      final permissions = <Permission>[
         Permission.bluetooth,
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-      ].request();
-
-      // Consider permissions granted if any required permission is granted.
-      bool granted = statuses.values.any((s) => s.isGranted);
-      return granted;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Permission request failed: $e');
+      ];
+      
+      // Add platform-specific permissions
+      if (!kIsWeb) {
+        if (Platform.isAndroid) {
+          permissions.addAll([
+            Permission.locationWhenInUse,
+            Permission.bluetoothScan,
+            Permission.bluetoothConnect,
+          ]);
+        } else if (Platform.isIOS) {
+          // iOS only needs bluetooth permission (NSBluetoothAlwaysUsageDescription)
+          // Location is not required for BLE on iOS 13+
+        }
       }
+      
+      final statuses = await permissions.request();
+      
+      // Log each permission status
+      for (final entry in statuses.entries) {
+        _emitStatus('Permission ${entry.key}: ${entry.value}');
+      }
+
+      // Check if required permissions are granted
+      final bluetoothGranted = statuses[Permission.bluetooth]?.isGranted ?? false;
+      
+      if (!bluetoothGranted) {
+        _emitStatus('ERROR: Bluetooth permission denied - go to Settings > Flow Track > Bluetooth');
+        return false;
+      }
+      
+      _emitStatus('Permissions OK');
+      return true;
+    } catch (e) {
+      _emitStatus('Permission error: $e');
       return false;
     }
   }
@@ -266,6 +314,8 @@ class BleService {
   void _startBleScanInternal() {
     _scanSubscription?.cancel();
     _unfilteredScanSubscription?.cancel();
+    _emitStatus('Starting BLE scan...');
+    
     try {
       // Show ALL BLE devices - no filtering
       // This helps debug iOS BLE issues and lets users manually select
@@ -280,19 +330,18 @@ class BleService {
             if (kDebugMode) {
               debugPrint('Found BLE device: ${device.name} (${device.id}) RSSI: ${device.rssi}');
             }
+            _emitStatus('Found: ${device.name} (${device.rssi} dBm)');
             _scanResultsController.add(device);
           }
         },
         onError: (error) {
-          if (kDebugMode) {
-            debugPrint('Scan error: $error');
-          }
+          _emitStatus('Scan error: $error');
         },
       );
+      
+      _emitStatus('Scan started - looking for devices...');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Failed to start BLE scan: $e');
-      }
+      _emitStatus('Failed to start scan: $e');
     }
   }
   
@@ -309,5 +358,6 @@ class BleService {
     _metricsController.close();
     _temperatureController.close();
     _connectionStateController.close();
+    _statusController.close();
   }
 }
