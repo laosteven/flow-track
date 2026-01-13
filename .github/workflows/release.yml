@@ -133,11 +133,27 @@ jobs:
             /usr/bin/codesign --force --sign "$CODESIGN_IDENTITY" --timestamp=none "$framework"
           done
           
-          # Sign the app
-          /usr/bin/codesign --force --sign "$CODESIGN_IDENTITY" \
-            --entitlements build/ios/iphoneos/Runner.app.dSYM/../Runner.app.entitlements \
-            --timestamp=none \
-            "$APP_PATH"
+          # Find entitlements file if it exists
+          ENTITLEMENTS_PATH=""
+          if [ -f "ios/Runner/Runner.entitlements" ]; then
+            ENTITLEMENTS_PATH="ios/Runner/Runner.entitlements"
+          elif [ -f "$APP_PATH/../Runner.entitlements" ]; then
+            ENTITLEMENTS_PATH="$APP_PATH/../Runner.entitlements"
+          fi
+          
+          # Sign the app with or without entitlements
+          if [ -n "$ENTITLEMENTS_PATH" ]; then
+            echo "Signing with entitlements: $ENTITLEMENTS_PATH"
+            /usr/bin/codesign --force --sign "$CODESIGN_IDENTITY" \
+              --entitlements "$ENTITLEMENTS_PATH" \
+              --timestamp=none \
+              "$APP_PATH"
+          else
+            echo "Signing without explicit entitlements file"
+            /usr/bin/codesign --force --sign "$CODESIGN_IDENTITY" \
+              --timestamp=none \
+              "$APP_PATH"
+          fi
           
           # Verify the signature
           codesign -vvv --deep --strict "$APP_PATH"
