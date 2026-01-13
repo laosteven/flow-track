@@ -47,6 +47,10 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location permission to scan for nearby Bluetooth devices.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location permission to scan for nearby Bluetooth devices.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>This app needs Bluetooth to connect to the Flow Track device and receive real-time motion data.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>

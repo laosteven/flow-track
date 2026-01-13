@@ -262,10 +262,8 @@ class BleService {
   void _startBleScanInternal() {
     _scanSubscription?.cancel();
     try {
-      final serviceUuid128 = Uuid.parse('0000180A-0000-1000-8000-00805F9B34FB');
-      
       _scanSubscription = _ble.scanForDevices(
-        withServices: [serviceUuid128],
+        withServices: [],
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
@@ -275,7 +273,8 @@ class BleService {
           final name = device.name;
           final lname = name.toLowerCase();
           // Match FlowTrack or any device advertising IMU
-          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('imu') || name.isEmpty) {
+          // Also add devices with empty names that might be advertising the service
+          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('imu')) {
             _scanResultsController.add(device);
           }
         },
