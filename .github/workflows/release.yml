@@ -105,7 +105,7 @@ jobs:
       - name: Get signing identity
         id: signing_identity
         run: |
-          IDENTITY=$(security find-identity -v -p codesigning $RUNNER_TEMP/app-signing.keychain-db | grep "Apple Distribution" | head -1 | grep -o '".*"' | sed 's/"//g')
+          IDENTITY=$(security find-identity -v -p codesigning $RUNNER_TEMP/app-signing.keychain-db | grep "Distribution" | head -1 | grep -o '".*"' | sed 's/"//g')
           echo "identity=$IDENTITY" >> $GITHUB_OUTPUT
           echo "Found identity: $IDENTITY"
 
