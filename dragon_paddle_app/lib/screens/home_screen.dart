@@ -212,6 +212,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _toggleRecording() async {
     if (_sessionService.isRecording) {
       _sessionService.stop();
+      try {
+        await WakelockPlus.toggle(enable: false);
+        setState(() {
+          _keepAwake = false;
+        });
+      } catch (e) {
+        print('WakelockPlus toggle failed: $e');
+      }
       // auto-save session
       final path = await _sessionService.saveSession();
       if (mounted) {
@@ -220,7 +228,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ).showSnackBar(SnackBar(content: Text('Session saved: $path')));
       }
     } else {
-      // Reset stats to match device
+      try {
+        await WakelockPlus.toggle(enable: true);
+        setState(() {
+          _keepAwake = true;
+        });
+      } catch (e) {
+        print('WakelockPlus toggle failed: $e');
+      }
       _strokeAnalyzer.reset();
       await _sessionService.startWithAnalyzer(_strokeAnalyzer);
       if (mounted) {
@@ -256,25 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Flow Track'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          // Keep-awake compact button
-          IconButton(
-            icon: Icon(_keepAwake ? Icons.bedtime : Icons.bedtime_outlined),
-            onPressed: () async {
-              final newVal = !_keepAwake;
-              setState(() {
-                _keepAwake = newVal;
-              });
-              try {
-                await WakelockPlus.toggle(enable: newVal);
-              } catch (e) {
-                // ignore: avoid_print
-                print('WakelockPlus toggle failed: $e');
-              }
-            },
-            tooltip: _keepAwake
-                ? 'Disable keep screen awake'
-                : 'Keep screen awake',
-          ),
           if (_isConnected)
             IconButton(
               icon: Icon(
@@ -283,8 +279,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               onPressed: _toggleRecording,
               tooltip: _sessionService.isRecording
-                  ? 'Stop recording'
-                  : 'Start recording',
+                  ? 'Stop recording (screen will sleep)'
+                  : 'Start recording (keeps screen awake)',
             ),
         ],
       ),
