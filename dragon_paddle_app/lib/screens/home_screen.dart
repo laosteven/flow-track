@@ -428,9 +428,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 shrinkWrap: true,
                 itemCount: _discoveredDevices.length,
                 itemBuilder: (context, index) {
-                  final device = _discoveredDevices[index];
-                  final isFlowTrack = device.name.toLowerCase().contains('flowtrack') ||
-                                      device.name.toLowerCase().contains('imu');
+                  // Sort devices: FlowTrack/Arduino first, then by signal strength
+                  final sortedDevices = List<DiscoveredDevice>.from(_discoveredDevices)
+                    ..sort((a, b) {
+                      final aName = a.name.toLowerCase();
+                      final bName = b.name.toLowerCase();
+                      final aIsTarget = aName.contains('flowtrack') || 
+                                        aName.contains('arduino') || 
+                                        aName.contains('imu');
+                      final bIsTarget = bName.contains('flowtrack') || 
+                                        bName.contains('arduino') || 
+                                        bName.contains('imu');
+                      if (aIsTarget && !bIsTarget) return -1;
+                      if (!aIsTarget && bIsTarget) return 1;
+                      return b.rssi.compareTo(a.rssi); // Stronger signal first
+                    });
+                  final device = sortedDevices[index];
+                  final lname = device.name.toLowerCase();
+                  final isFlowTrack = lname.contains('flowtrack') ||
+                                      lname.contains('arduino') ||
+                                      lname.contains('imu');
                   return Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 20,
