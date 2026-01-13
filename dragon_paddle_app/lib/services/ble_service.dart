@@ -264,14 +264,17 @@ class BleService {
     _scanSubscription?.cancel();
     try {
       _scanSubscription = _ble.scanForDevices(
-        withServices: [],
+        withServices: [Uuid.parse(serviceUuid)],
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
+          if (kDebugMode) {
+            debugPrint('Found BLE device: ${device.name} (${device.id})');
+          }
           final name = device.name;
           final lname = name.toLowerCase();
           // Match FlowTrack or any device advertising IMU
-          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('imu')) {
+          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('imu') || name.isEmpty) {
             _scanResultsController.add(device);
           }
         },
