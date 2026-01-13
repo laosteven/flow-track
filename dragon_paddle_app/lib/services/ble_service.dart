@@ -8,13 +8,12 @@ import '../models/sensor_data.dart';
 class BleService {
   final FlutterReactiveBle _ble = FlutterReactiveBle();
   
-  // BLE UUIDs from Arduino firmware
-  static const String serviceUuid = "180A";
-  static const String accelCharUuid = "2A37";
-  static const String gyroCharUuid = "2A38";
-  static const String magCharUuid = "2A39";
-  static const String metricsCharUuid = "2A3A";
-  static const String tempCharUuid = "2A3B";
+  static const String serviceUuid = "0000180A-0000-1000-8000-00805F9B34FB";
+  static const String accelCharUuid = "00002A37-0000-1000-8000-00805F9B34FB";
+  static const String gyroCharUuid = "00002A38-0000-1000-8000-00805F9B34FB";
+  static const String magCharUuid = "00002A39-0000-1000-8000-00805F9B34FB";
+  static const String metricsCharUuid = "00002A3A-0000-1000-8000-00805F9B34FB";
+  static const String tempCharUuid = "00002A3B-0000-1000-8000-00805F9B34FB";
   
   final _scanResultsController = StreamController<DiscoveredDevice>.broadcast();
   final _accelerometerController = StreamController<AccelerometerData>.broadcast();
@@ -263,8 +262,10 @@ class BleService {
   void _startBleScanInternal() {
     _scanSubscription?.cancel();
     try {
+      final serviceUuid128 = Uuid.parse('0000180A-0000-1000-8000-00805F9B34FB');
+      
       _scanSubscription = _ble.scanForDevices(
-        withServices: [Uuid.parse(serviceUuid)],
+        withServices: [serviceUuid128],
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
