@@ -8,12 +8,14 @@ import '../models/sensor_data.dart';
 class BleService {
   final FlutterReactiveBle _ble = FlutterReactiveBle();
   
-  static const String serviceUuid = "0000180A-0000-1000-8000-00805F9B34FB";
-  static const String accelCharUuid = "00002A37-0000-1000-8000-00805F9B34FB";
-  static const String gyroCharUuid = "00002A38-0000-1000-8000-00805F9B34FB";
-  static const String magCharUuid = "00002A39-0000-1000-8000-00805F9B34FB";
-  static const String metricsCharUuid = "00002A3A-0000-1000-8000-00805F9B34FB";
-  static const String tempCharUuid = "00002A3B-0000-1000-8000-00805F9B34FB";
+  // Use short 16-bit UUIDs to match Arduino firmware exactly
+  // These are standard Bluetooth SIG UUIDs that expand to the full 128-bit format
+  static const String serviceUuid = "180A";
+  static const String accelCharUuid = "2A37";
+  static const String gyroCharUuid = "2A38";
+  static const String magCharUuid = "2A39";
+  static const String metricsCharUuid = "2A3A";
+  static const String tempCharUuid = "2A3B";
   
   final _scanResultsController = StreamController<DiscoveredDevice>.broadcast();
   final _accelerometerController = StreamController<AccelerometerData>.broadcast();
@@ -78,6 +80,8 @@ class BleService {
   void stopScan() {
     _scanSubscription?.cancel();
     _scanSubscription = null;
+    _unfilteredScanSubscription?.cancel();
+    _unfilteredScanSubscription = null;
   }
   
   /// Connect to a device
@@ -262,32 +266,68 @@ class BleService {
   void _startBleScanInternal() {
     _scanSubscription?.cancel();
     try {
+      // Scan for devices advertising our service UUID - more reliable on iOS
+      // Also scan without filter as fallback for devices that don't advertise services
       _scanSubscription = _ble.scanForDevices(
-        withServices: [],
+        withServices: [Uuid.parse(serviceUuid)],
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
           if (kDebugMode) {
-            debugPrint('Found BLE device: ${device.name} (${device.id})');
+            debugPrint('Found BLE device: ${device.name} (${device.id}) - services: ${device.serviceUuids}');
           }
-          final name = device.name;
-          final lname = name.toLowerCase();
-          // Match FlowTrack or any device advertising IMU
-          // Also add devices with empty names that might be advertising the service
-          if (lname.contains('flowtrack') || lname.contains('flowtrackimu') || lname.contains('imu')) {
-            _scanResultsController.add(device);
-          }
+          // Device matched our service UUID filter, add it
+          _scanResultsController.add(device);
         },
         onError: (error) {
           if (kDebugMode) {
             debugPrint('Scan error: $error');
           }
+          // If service-filtered scan fails, try scanning without filter
+          _startUnfilteredScan();
         },
       );
+      
+      // Also start an unfiltered scan to catch devices by name
+      // (some BLE devices don't advertise service UUIDs)
+      _startUnfilteredScan();
     } catch (e) {
       // Guard against platform / unsupported operation errors (e.g., Platform._operatingSystem)
       if (kDebugMode) {
         debugPrint('Failed to start BLE scan: $e');
+      }
+    }
+  }
+  
+  StreamSubscription? _unfilteredScanSubscription;
+  
+  void _startUnfilteredScan() {
+    _unfilteredScanSubscription?.cancel();
+    try {
+      _unfilteredScanSubscription = _ble.scanForDevices(
+        withServices: [],
+        scanMode: ScanMode.lowLatency,
+      ).listen(
+        (device) {
+          final name = device.name;
+          final lname = name.toLowerCase();
+          // Match FlowTrack devices by name
+          if (lname.contains('flowtrack') || lname.contains('imu')) {
+            if (kDebugMode) {
+              debugPrint('Found FlowTrack device by name: ${device.name} (${device.id})');
+            }
+            _scanResultsController.add(device);
+          }
+        },
+        onError: (error) {
+          if (kDebugMode) {
+            debugPrint('Unfiltered scan error: $error');
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to start unfiltered BLE scan: $e');
       }
     }
   }
