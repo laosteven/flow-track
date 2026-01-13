@@ -372,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_isScanning) ...[
             const CircularProgressIndicator(),
             const SizedBox(height: 20),
-            const Text('Scanning for Flow Track devices...'),
+            const Text('Scanning for BLE devices...'),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: _toggleScan,
@@ -385,6 +385,11 @@ class _HomeScreenState extends State<HomeScreen> {
               'Discovered devices:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap a FlowTrack device to connect',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
@@ -392,20 +397,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: _discoveredDevices.length,
                 itemBuilder: (context, index) {
                   final device = _discoveredDevices[index];
+                  final isFlowTrack = device.name.toLowerCase().contains('flowtrack') ||
+                                      device.name.toLowerCase().contains('imu');
                   return Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 5,
                     ),
+                    color: isFlowTrack ? Colors.blue.shade50 : null,
                     child: ListTile(
-                      leading: const Icon(Icons.bluetooth, color: Colors.blue),
+                      leading: Icon(
+                        isFlowTrack ? Icons.sensors : Icons.bluetooth,
+                        color: isFlowTrack ? Colors.green : Colors.blue,
+                      ),
                       title: Text(
                         device.name.isNotEmpty ? device.name : 'Unknown device',
+                        style: isFlowTrack ? const TextStyle(fontWeight: FontWeight.bold) : null,
                       ),
-                      subtitle: Text(device.id),
+                      subtitle: Text('${device.id}\nSignal: ${device.rssi} dBm'),
+                      isThreeLine: true,
                       trailing: ElevatedButton(
                         onPressed: () => _connectToDevice(device.id),
-                        child: const Text('Connect'),
+                        style: isFlowTrack ? ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ) : null,
+                        child: Text(isFlowTrack ? 'Connect' : 'Try'),
                       ),
                     ),
                   );

@@ -265,34 +265,31 @@ class BleService {
 
   void _startBleScanInternal() {
     _scanSubscription?.cancel();
+    _unfilteredScanSubscription?.cancel();
     try {
-      // Scan for devices advertising our service UUID - more reliable on iOS
-      // Also scan without filter as fallback for devices that don't advertise services
+      // Show ALL BLE devices - no filtering
+      // This helps debug iOS BLE issues and lets users manually select
       _scanSubscription = _ble.scanForDevices(
-        withServices: [Uuid.parse(serviceUuid)],
+        withServices: [],
         scanMode: ScanMode.lowLatency,
       ).listen(
         (device) {
-          if (kDebugMode) {
-            debugPrint('Found BLE device: ${device.name} (${device.id}) - services: ${device.serviceUuids}');
+          // Only add devices that have a name (skip anonymous devices to reduce noise)
+          // But include all named devices for debugging
+          if (device.name.isNotEmpty) {
+            if (kDebugMode) {
+              debugPrint('Found BLE device: ${device.name} (${device.id}) RSSI: ${device.rssi}');
+            }
+            _scanResultsController.add(device);
           }
-          // Device matched our service UUID filter, add it
-          _scanResultsController.add(device);
         },
         onError: (error) {
           if (kDebugMode) {
             debugPrint('Scan error: $error');
           }
-          // If service-filtered scan fails, try scanning without filter
-          _startUnfilteredScan();
         },
       );
-      
-      // Also start an unfiltered scan to catch devices by name
-      // (some BLE devices don't advertise service UUIDs)
-      _startUnfilteredScan();
     } catch (e) {
-      // Guard against platform / unsupported operation errors (e.g., Platform._operatingSystem)
       if (kDebugMode) {
         debugPrint('Failed to start BLE scan: $e');
       }
@@ -300,37 +297,6 @@ class BleService {
   }
   
   StreamSubscription? _unfilteredScanSubscription;
-  
-  void _startUnfilteredScan() {
-    _unfilteredScanSubscription?.cancel();
-    try {
-      _unfilteredScanSubscription = _ble.scanForDevices(
-        withServices: [],
-        scanMode: ScanMode.lowLatency,
-      ).listen(
-        (device) {
-          final name = device.name;
-          final lname = name.toLowerCase();
-          // Match FlowTrack devices by name
-          if (lname.contains('flowtrack') || lname.contains('imu')) {
-            if (kDebugMode) {
-              debugPrint('Found FlowTrack device by name: ${device.name} (${device.id})');
-            }
-            _scanResultsController.add(device);
-          }
-        },
-        onError: (error) {
-          if (kDebugMode) {
-            debugPrint('Unfiltered scan error: $error');
-          }
-        },
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Failed to start unfiltered BLE scan: $e');
-      }
-    }
-  }
   
   /// Dispose of all resources
   void dispose() {
